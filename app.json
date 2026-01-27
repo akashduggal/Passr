@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "react_native",
-    "slug": "react_native",
+    "name": "Passr",
+    "slug": "passr",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,10 +10,14 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#8C1D40"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "anything",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,6 +28,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "scheme": "passr",
+    "extra": {
+      "eas": {
+        "projectId": "b066ab99-b0c3-41ee-985c-f955923c1f4e"
+      }
+    },
+    "owner": "akashduggal",
+    "plugins": [
+      "expo-router",
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

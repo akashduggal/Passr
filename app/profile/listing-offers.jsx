@@ -1,0 +1,497 @@
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../ThemeContext';
+import { getTheme, ASU } from '../theme';
+
+// Mock offers data for a specific listing
+const MOCK_LISTING_OFFERS = [
+  {
+    id: 1,
+    buyerName: 'John Doe',
+    buyerAvatar: null,
+    offerAmount: 40,
+    message: 'Hi, I\'m interested in this item. Would you accept $40?',
+    status: 'pending', // pending, accepted, rejected
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+  },
+  {
+    id: 2,
+    buyerName: 'Jane Smith',
+    buyerAvatar: null,
+    offerAmount: 42,
+    message: 'Can you do $42? I can pick it up today.',
+    status: 'accepted',
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
+  },
+  {
+    id: 3,
+    buyerName: 'Mike Johnson',
+    buyerAvatar: null,
+    offerAmount: 38,
+    message: 'Is $38 possible?',
+    status: 'rejected',
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+  },
+];
+
+function formatDate(date) {
+  const now = new Date();
+  const diffMs = now - date;
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffHours < 1) {
+    return 'Just now';
+  } else if (diffHours < 24) {
+    return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  } else if (diffDays === 1) {
+    return 'Yesterday';
+  } else {
+    return `${diffDays} days ago`;
+  }
+}
+
+export default function ListingOffers() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const { isDarkMode } = useTheme();
+  const theme = getTheme(isDarkMode);
+  const listing = params.listing ? JSON.parse(params.listing) : null;
+  const [offers] = useState(MOCK_LISTING_OFFERS);
+  const [selectedStatus, setSelectedStatus] = useState('pending'); // 'accepted' | 'pending' | 'rejected'
+  const styles = getStyles(theme);
+
+  const handleAcceptOffer = (offer) => {
+    // TODO: Implement accept offer logic
+    console.log('Accept offer:', offer.id);
+  };
+
+  const handleRejectOffer = (offer) => {
+    // TODO: Implement reject offer logic
+    console.log('Reject offer:', offer.id);
+  };
+
+  const handleChat = (offer) => {
+    router.push({
+      pathname: '/chat',
+      params: {
+        isSeller: 'true',
+        buyerName: offer.buyerName || 'Buyer',
+        listingId: (listing?.id ?? '').toString(),
+        productTitle: listing?.title || 'Product',
+        productPrice: (listing?.price ?? 0).toString(),
+        offerAmount: offer.offerAmount.toString(),
+        offerAccepted: 'true',
+      },
+    });
+  };
+
+  const isListingSold = listing?.sold === true;
+  const showOpenChat = (offer) => !isListingSold && offer.status === 'accepted';
+
+  // Sort offers by createdAt (newest first) and filter by selected status
+  const sortedOffers = [...offers].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+  );
+  const filteredOffers = sortedOffers.filter(
+    (offer) => offer.status === selectedStatus,
+  );
+
+  return (
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Listing Info */}
+        {listing && (
+          <View style={styles.listingInfo}>
+            <View style={styles.listingTitleRow}>
+              <Text style={styles.listingTitle}>{listing.title}</Text>
+              {isListingSold && (
+                <View style={styles.soldChip}>
+                  <Text style={styles.soldChipText}>Sold</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.listingPrice}>${listing.price}</Text>
+          </View>
+        )}
+
+        {/* Offers Tabs */}
+        <View style={styles.tabsContainer}>
+          {['accepted', 'pending', 'rejected'].map((statusKey) => (
+            <TouchableOpacity
+              key={statusKey}
+              style={[
+                styles.tabButton,
+                selectedStatus === statusKey && styles.tabButtonActive,
+              ]}
+              onPress={() => setSelectedStatus(statusKey)}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  selectedStatus === statusKey && styles.tabTextActive,
+                ]}
+              >
+                {statusKey === 'accepted'
+                  ? 'Accepted'
+                  : statusKey === 'pending'
+                  ? 'Pending'
+                  : 'Rejected'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Offers List (by status tab) */}
+        {filteredOffers.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="cash-outline" size={64} color={theme.textSecondary} />
+            <Text style={styles.emptyTitle}>
+              {selectedStatus === 'accepted'
+                ? 'No Accepted Offers'
+                : selectedStatus === 'pending'
+                ? 'No Pending Offers'
+                : 'No Rejected Offers'}
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              {selectedStatus === 'accepted'
+                ? 'Accepted offers for this listing will appear here'
+                : selectedStatus === 'pending'
+                ? 'Pending offers for this listing will appear here'
+                : 'Rejected offers for this listing will appear here'}
+            </Text>
+          </View>
+        ) : (
+          filteredOffers.map((offer) => (
+            <View key={offer.id} style={styles.offerCard}>
+              <View style={styles.offerHeader}>
+                <View style={styles.buyerInfo}>
+                  <View style={styles.buyerAvatar}>
+                    <Ionicons name="person" size={20} color={ASU.white} />
+                  </View>
+                  <View style={styles.buyerDetails}>
+                    <Text style={styles.buyerName}>{offer.buyerName}</Text>
+                    <Text style={styles.offerDate}>{formatDate(offer.createdAt)}</Text>
+                  </View>
+                </View>
+                {offer.status === 'pending' && (
+                  <View style={styles.pendingBadge}>
+                    <Text style={styles.pendingText}>Pending</Text>
+                  </View>
+                )}
+                {offer.status === 'accepted' && (
+                  <View style={styles.acceptedBadge}>
+                    <Text style={styles.acceptedText}>Accepted</Text>
+                  </View>
+                )}
+                {offer.status === 'rejected' && (
+                  <View style={styles.rejectedBadge}>
+                    <Text style={styles.rejectedText}>Rejected</Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.offerAmountSection}>
+                <Text style={styles.offerAmountLabel}>Offer Amount</Text>
+                <Text style={styles.offerAmount}>${offer.offerAmount}</Text>
+              </View>
+
+              {offer.message && (
+                <View style={styles.messageSection}>
+                  <Text style={styles.messageText}>{offer.message}</Text>
+                </View>
+              )}
+
+              {offer.status === 'pending' && (
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={styles.rejectButton}
+                    onPress={() => handleRejectOffer(offer)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.rejectButtonText}>Reject</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.acceptButton}
+                    onPress={() => handleAcceptOffer(offer)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.acceptButtonText}>Accept</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {showOpenChat(offer) && (
+                <TouchableOpacity
+                  style={styles.chatButton}
+                  onPress={() => handleChat(offer)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="chatbubble-outline" size={18} color={ASU.white} />
+                  <Text style={styles.chatButtonText}>Open Chat</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const getStyles = (theme) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  listingInfo: {
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  listingTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 4,
+  },
+  listingTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.text,
+    flex: 1,
+  },
+  soldChip: {
+    backgroundColor: ASU.maroon,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  soldChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: ASU.white,
+  },
+  listingPrice: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: ASU.maroon,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: theme.surface,
+    borderRadius: 999,
+    padding: 4,
+    marginTop: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 999,
+    alignItems: 'center',
+  },
+  tabButtonActive: {
+    backgroundColor: ASU.maroon,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  tabTextActive: {
+    color: ASU.white,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: theme.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    color: theme.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
+  offerCard: {
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  offerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  buyerInfo: {
+    flexDirection: 'row',
+    flex: 1,
+    marginRight: 12,
+  },
+  buyerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: ASU.maroon,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  buyerDetails: {
+    flex: 1,
+  },
+  buyerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.text,
+    marginBottom: 2,
+  },
+  offerDate: {
+    fontSize: 12,
+    color: theme.textSecondary,
+  },
+  pendingBadge: {
+    backgroundColor: ASU.gold + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  pendingText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: ASU.gold,
+  },
+  acceptedBadge: {
+    backgroundColor: ASU.green + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  acceptedText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: ASU.green,
+  },
+  rejectedBadge: {
+    backgroundColor: ASU.maroon + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  rejectedText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: ASU.maroon,
+  },
+  offerAmountSection: {
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  offerAmountLabel: {
+    fontSize: 13,
+    color: theme.textSecondary,
+    marginBottom: 4,
+  },
+  offerAmount: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: ASU.maroon,
+  },
+  messageSection: {
+    marginBottom: 12,
+  },
+  messageText: {
+    fontSize: 14,
+    color: theme.text,
+    lineHeight: 20,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  rejectButton: {
+    flex: 1,
+    backgroundColor: ASU.gray6,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  rejectButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  acceptButton: {
+    flex: 1,
+    backgroundColor: ASU.maroon,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  acceptButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: ASU.white,
+  },
+  chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: ASU.maroon,
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginTop: 8,
+    gap: 8,
+  },
+  chatButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: ASU.white,
+  },
+});
