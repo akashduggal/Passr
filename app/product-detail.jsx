@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from './ThemeContext';
 import { getTheme, ASU } from './theme';
@@ -100,9 +100,12 @@ const detailStyles = StyleSheet.create({
 export default function ProductDetail() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme);
+  const headerHeight = Platform.OS === 'ios' ? 44 : 56;
+  const topPadding = insets.top + headerHeight;
 
   const product = params.product ? JSON.parse(params.product) : null;
 
@@ -124,7 +127,7 @@ export default function ProductDetail() {
   }
 
   const images = product.images && Array.isArray(product.images) ? product.images : [];
-  const displaySlots = 6;
+  const imageSlots = images.length > 0 ? [...images] : [null];
   const title = product.title || `${product.category || 'Item'}${product.brand ? ` · ${product.brand}` : ''}`;
   const livingCommunity = product.livingCommunity || product.location || null;
   const sellerId = product.sellerId || null;
@@ -137,6 +140,17 @@ export default function ProductDetail() {
   const [currentPage, setCurrentPage] = useState(0);
   const [offerModalVisible, setOfferModalVisible] = useState(false);
   const [offerPrice, setOfferPrice] = useState(() => product.price || 0);
+  const [fullScreenImageIndex, setFullScreenImageIndex] = useState(null);
+  const [fullScreenViewedIndex, setFullScreenViewedIndex] = useState(0);
+
+  const openFullScreenImage = (index) => {
+    setFullScreenImageIndex(index);
+    setFullScreenViewedIndex(index);
+  };
+
+  const closeFullScreenImage = () => {
+    setFullScreenImageIndex(null);
+  };
 
   // Get seller's other listings (same sellerId, exclude current product, max 3)
   const sellerListings = useMemo(() => {
@@ -149,21 +163,35 @@ export default function ProductDetail() {
     ).slice(0, 3);
   }, [product.id, sellerId]);
 
-  // Create array of image slots (up to 6)
-  const imageSlots = Array.from({ length: displaySlots }).map((_, i) => images[i] || null);
+  /** Resolve detail-view URI for carousel (WebP detail variant or legacy string). */
+  const getDetailUri = (slot) => {
+    if (!slot) return null;
+    if (typeof slot === 'string') return slot;
+    return slot.detail?.uri ?? slot.thumbnail?.uri ?? null;
+  };
+
+  /** Lazy load: only load image when within one page of current to save memory/bandwidth. */
+  const isPageNearVisible = (index) => Math.abs(index - currentPage) <= 1;
 
   const renderCarouselPage = (index) => {
-    const uri = imageSlots[index];
+    const slot = imageSlots[index];
+    const detailUri = getDetailUri(slot);
+    const shouldLoad = detailUri && isPageNearVisible(index);
+    const hasImage = !!detailUri;
     return (
-      <View key={index} style={styles.carouselPage}>
-        {uri ? (
-          <Image source={{ uri }} style={styles.carouselImage} resizeMode="cover" />
+      <Pressable
+        key={index}
+        style={styles.carouselPage}
+        onPress={() => uri && openFullScreenImage(index)}
+      >
+        {shouldLoad ? (
+          <Image source={{ uri: detailUri }} style={styles.carouselImage} resizeMode="contain" />
         ) : (
           <View style={styles.carouselPlaceholder}>
             <Ionicons name="image-outline" size={60} color={ASU.gray4} />
           </View>
         )}
-      </View>
+      </Pressable>
     );
   };
 
@@ -174,6 +202,7 @@ export default function ProductDetail() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <View style={{ height: topPadding, backgroundColor: theme.surface }} />
         {/* Photos – Carousel */}
         <View style={styles.photosSection}>
           <View style={styles.carouselContainer}>
@@ -322,6 +351,61 @@ export default function ProductDetail() {
         </View>
       )}
 
+      {/* Full Screen Image Modal */}
+      <Modal
+        visible={fullScreenImageIndex != null}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeFullScreenImage}
+        statusBarTranslucent={true}
+      >
+        <Pressable
+          style={styles.fullScreenOverlay}
+          onPress={closeFullScreenImage}
+        >
+          <TouchableOpacity
+            style={styles.fullScreenCloseButton}
+            onPress={closeFullScreenImage}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="close" size={32} color={ASU.white} />
+          </TouchableOpacity>
+          <Pressable
+            style={styles.fullScreenImageContainer}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <PagerView
+              key={fullScreenImageIndex}
+              style={styles.fullScreenPager}
+              initialPage={fullScreenImageIndex ?? 0}
+              onPageSelected={(e) => setFullScreenViewedIndex(e.nativeEvent.position)}
+            >
+              {imageSlots.map((slot, index) => {
+                const uri = getDetailUri(slot);
+                if (!uri) return <View key={index} style={styles.fullScreenPage} />;
+                return (
+                  <View key={index} style={styles.fullScreenPage}>
+                    <Image
+                      source={{ uri }}
+                      style={styles.fullScreenImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                );
+              })}
+            </PagerView>
+          </Pressable>
+          {imageSlots.length > 1 && (
+            <View style={styles.fullScreenPagination}>
+              <Text style={styles.fullScreenPageCount}>
+                {fullScreenViewedIndex + 1} / {imageSlots.length}
+              </Text>
+            </View>
+          )}
+        </Pressable>
+      </Modal>
+
       {/* Offer Modal */}
       <Modal
         visible={offerModalVisible}
@@ -457,6 +541,7 @@ const getStyles = (theme) => StyleSheet.create({
 
   photosSection: {
     marginBottom: 24,
+    backgroundColor: theme.surface,
   },
   sectionHeader: {
     paddingHorizontal: 20,
@@ -474,6 +559,7 @@ const getStyles = (theme) => StyleSheet.create({
     height: CAROUSEL_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: theme.surface,
   },
   carouselImage: {
     width: '100%',
@@ -684,5 +770,58 @@ const getStyles = (theme) => StyleSheet.create({
   wishlistButtonOnly: {
     flex: 1,
     width: undefined,
+  },
+
+  fullScreenOverlay: {
+    flex: 1,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+  },
+  fullScreenCloseButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 44,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImageContainer: {
+    flex: 1,
+    width: screenWidth,
+    paddingVertical: 120,
+  },
+  fullScreenPager: {
+    flex: 1,
+    width: screenWidth,
+  },
+  fullScreenPage: {
+    flex: 1,
+    width: screenWidth,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: screenWidth,
+    height: '100%',
+  },
+  fullScreenPagination: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 50 : 36,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  fullScreenPageCount: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
 });

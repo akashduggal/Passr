@@ -52,6 +52,11 @@ export default function ProductTile({ product, style }) {
   const isSold = !!product.sold;
   const styles = getStyles(theme);
 
+  const firstImage = product.images?.[0];
+  const thumbnailUri = firstImage
+    ? (typeof firstImage === 'string' ? firstImage : firstImage.thumbnail?.uri ?? firstImage.originalUri)
+    : null;
+
   return (
     <TouchableOpacity
       style={[styles.productTile, style, isSold && styles.productTileDisabled]}
@@ -60,9 +65,9 @@ export default function ProductTile({ product, style }) {
       disabled={isSold}
     >
       <View style={styles.productImageContainer}>
-        {product.images && product.images[0] ? (
+        {thumbnailUri ? (
           <Image
-            source={{ uri: product.images[0] }}
+            source={{ uri: thumbnailUri }}
             style={styles.productImage}
             resizeMode="cover"
           />

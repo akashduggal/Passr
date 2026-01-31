@@ -11,6 +11,7 @@ import {
   Alert,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../ThemeContext';
 import { getTheme, ASU } from '../theme';
 import { ENABLE_TICKETS } from '../featureFlags';
+import { compressListingImage } from '../../lib/imageCompression';
 
 const BASE_CATEGORIES = ['Furniture', 'Electronics', 'Escooters', 'Kitchen'];
 const CATEGORIES = ENABLE_TICKETS ? [...BASE_CATEGORIES, 'Tickets'] : BASE_CATEGORIES;
@@ -54,6 +56,7 @@ export default function AddListing() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const [images, setImages] = useState([]);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -126,6 +129,7 @@ export default function AddListing() {
       Alert.alert('Not available', 'Taking a photo is not supported on web.');
       return;
     }
+    if (isCompressing) return;
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) return;
     if (!checkImageLimit()) return;
@@ -137,12 +141,20 @@ export default function AddListing() {
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      const newUris = result.assets.map((a) => a.uri);
-      setImages((prev) => [...prev, ...newUris].slice(0, MAX_IMAGES));
+      setIsCompressing(true);
+      try {
+        const compressed = await Promise.all(result.assets.map((a) => compressListingImage(a.uri)));
+        setImages((prev) => [...prev, ...compressed].slice(0, MAX_IMAGES));
+      } catch (e) {
+        Alert.alert('Compression failed', e?.message ?? 'Could not process images.');
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
   const pickImage = async () => {
+    if (isCompressing) return;
     const hasPermission = await requestMediaLibraryPermission();
     if (!hasPermission) return;
     if (!checkImageLimit()) return;
@@ -155,8 +167,15 @@ export default function AddListing() {
     });
 
     if (!result.canceled && result.assets) {
-      const newImages = result.assets.map((asset) => asset.uri);
-      setImages((prev) => [...prev, ...newImages].slice(0, MAX_IMAGES));
+      setIsCompressing(true);
+      try {
+        const compressed = await Promise.all(result.assets.map((asset) => compressListingImage(asset.uri)));
+        setImages((prev) => [...prev, ...compressed].slice(0, MAX_IMAGES));
+      } catch (e) {
+        Alert.alert('Compression failed', e?.message ?? 'Could not process images.');
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
@@ -164,9 +183,16 @@ export default function AddListing() {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const getDisplayUri = (image) => {
+    if (!image) return null;
+    if (typeof image === 'string') return image;
+    return image.thumbnail?.uri ?? image.originalUri ?? null;
+  };
+
   const renderImageTile = (index) => {
     const image = images[index];
     const isEmpty = !image;
+    const displayUri = getDisplayUri(image);
     return (
       <View key={index} style={styles.imageTile}>
         {isEmpty ? (
@@ -174,12 +200,17 @@ export default function AddListing() {
             style={[styles.placeholderTile, { borderColor: theme.border }]}
             onPress={pickImage}
             activeOpacity={0.7}
+            disabled={isCompressing}
           >
-            <Ionicons name="add" size={28} color={theme.textSecondary} />
+            {isCompressing ? (
+              <ActivityIndicator size="small" color={ASU.maroon} />
+            ) : (
+              <Ionicons name="add" size={28} color={theme.textSecondary} />
+            )}
           </TouchableOpacity>
         ) : (
           <View style={styles.imageContainer}>
-            <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
+            <Image source={{ uri: displayUri }} style={styles.image} resizeMode="cover" />
             <TouchableOpacity
               style={[styles.removeButton, { backgroundColor: ASU.maroon }]}
               onPress={() => removeImage(index)}
@@ -293,6 +324,7 @@ export default function AddListing() {
                 style={[styles.photoOptionButton, { backgroundColor: theme.surface, borderColor: ASU.maroon }]}
                 onPress={takePhoto}
                 activeOpacity={0.7}
+                disabled={isCompressing}
               >
                 <Ionicons name="camera-outline" size={22} color={ASU.maroon} />
                 <Text style={styles.photoOptionText}>Take Photo</Text>

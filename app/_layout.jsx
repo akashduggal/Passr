@@ -81,6 +81,7 @@ export default function Layout() {
           name="product-detail"
           options={{
             title: '',
+            headerTransparent: true,
             headerBackTitleVisible: false,
             headerBackTitle: '',
             headerBackButtonDisplayMode: 'minimal',
