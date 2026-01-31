@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme, ASU, getTheme } from '../theme';
-import { useTheme } from '../ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function SellerInfoCard({ 
   sellerName, 

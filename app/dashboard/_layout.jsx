@@ -1,8 +1,8 @@
 import { View, TouchableOpacity } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../ThemeContext';
-import { getTheme } from '../theme';
+import { useTheme } from '../../src/context/ThemeContext';
+import { getTheme } from '../../src/theme';
 
 function HeaderRight() {
   const router = useRouter();

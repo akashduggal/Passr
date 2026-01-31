@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { FilterProvider } from './FilterContext';
-import { ThemeProvider } from './ThemeContext';
+import { FilterProvider } from '../src/context/FilterContext';
+import { ThemeProvider } from '../src/context/ThemeContext';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();

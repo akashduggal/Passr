@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
-import { useTheme } from '../ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import { getTheme, ASU } from '../theme';
 
 export default function ProductTileSkeleton({ style }) {

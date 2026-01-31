@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import { getTheme, ASU } from '../theme';
 
 function formatPostedDate(postedAt) {
