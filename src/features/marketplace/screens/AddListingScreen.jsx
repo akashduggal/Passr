@@ -198,14 +198,14 @@ export default function AddListingScreen() {
         {isEmpty ? (
           <TouchableOpacity
             style={[styles.placeholderTile, { borderColor: theme.border }]}
-            onPress={pickImage}
+            onPress={takePhoto}
             activeOpacity={0.7}
             disabled={isCompressing}
           >
             {isCompressing ? (
               <ActivityIndicator size="small" color={ASU.maroon} />
             ) : (
-              <Ionicons name="add" size={28} color={theme.textSecondary} />
+              <Ionicons name="camera-outline" size={28} color={theme.textSecondary} />
             )}
           </TouchableOpacity>
         ) : (
@@ -322,12 +322,12 @@ export default function AddListingScreen() {
             <View style={styles.photoOptionsRow}>
               <TouchableOpacity
                 style={[styles.photoOptionButton, { backgroundColor: theme.surface, borderColor: ASU.maroon }]}
-                onPress={takePhoto}
+                onPress={pickImage}
                 activeOpacity={0.7}
                 disabled={isCompressing}
               >
-                <Ionicons name="camera-outline" size={22} color={ASU.maroon} />
-                <Text style={styles.photoOptionText}>Take Photo</Text>
+                <Ionicons name="images-outline" size={22} color={ASU.maroon} />
+                <Text style={styles.photoOptionText}>Choose from Library</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -542,12 +542,15 @@ const getStyles = (theme) => StyleSheet.create({
     marginBottom: 12,
   },
   photoOptionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
+    borderStyle: 'dashed',
     gap: 6,
   },
   photoOptionText: {
