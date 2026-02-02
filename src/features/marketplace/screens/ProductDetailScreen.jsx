@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,7 @@ import { CURRENT_USER_ID, getSellerName } from '../../../constants/currentUser';
 import ProductTile from '../../../components/ProductTile';
 import SellerInfoCard from '../../../components/SellerInfoCard';
 import MakeOfferModal from '../components/MakeOfferModal';
-import listingService from '../../../services/ListingService';
+import { listingService } from '../../../services/ListingService';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CAROUSEL_HEIGHT = 300;
@@ -130,15 +130,27 @@ export default function ProductDetailScreen() {
   };
 
   // Get seller's other listings (same sellerId, exclude current product)
-  const allSellerListings = useMemo(() => {
-    if (!sellerId) return [];
-    const listings = listingService.getAllListings();
-    return listings.filter(
-      (p) =>
-        p.id !== product.id &&
-        p.sellerId === sellerId &&
-        (ENABLE_TICKETS || p.category !== 'Tickets')
-    );
+  const [allSellerListings, setAllSellerListings] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!sellerId) {
+      setAllSellerListings([]);
+      return;
+    }
+    
+    listingService.getAllListings().then((listings) => {
+      if (!isMounted) return;
+      const filtered = listings.filter(
+        (p) =>
+          p.id !== product.id &&
+          p.sellerId === sellerId &&
+          (ENABLE_TICKETS || p.category !== 'Tickets')
+      );
+      setAllSellerListings(filtered);
+    });
+    
+    return () => { isMounted = false; };
   }, [product.id, sellerId]);
 
   /** Resolve detail-view URI for carousel (WebP detail variant or legacy string). */

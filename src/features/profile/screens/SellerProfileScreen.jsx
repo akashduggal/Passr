@@ -16,7 +16,7 @@ import { getTheme, ASU } from '../../../theme';
 import { ENABLE_TICKETS } from '../../../constants/featureFlags';
 import ProductTile from '../../../components/ProductTile';
 import MakeOfferModal from '../../marketplace/components/MakeOfferModal';
-import listingService from '../../../services/ListingService';
+import { listingService } from '../../../services/ListingService';
 
 export default function SellerProfileScreen() {
   const router = useRouter();
@@ -36,20 +36,28 @@ export default function SellerProfileScreen() {
   const [selectedIds, setSelectedIds] = useState(autoSelectId ? [autoSelectId] : []);
   const [offerModalVisible, setOfferModalVisible] = useState(false);
 
+  const [sellerListings, setSellerListings] = useState([]);
+
   // Get all listings by this seller: by sellerId when provided, else by livingCommunity
-  const sellerListings = useMemo(() => {
-    const allListings = listingService.getAllListings();
-    if (sellerId) {
-      return allListings.filter(
-        (p) => p.sellerId === sellerId && (ENABLE_TICKETS || p.category !== 'Tickets')
-      );
-    }
-    if (!livingCommunity) return [];
-    return allListings.filter(
-      (p) =>
-        (p.livingCommunity === livingCommunity || p.location === livingCommunity) &&
-        (ENABLE_TICKETS || p.category !== 'Tickets')
-    );
+  useEffect(() => {
+    let isMounted = true;
+    listingService.getAllListings().then((allListings) => {
+      if (!isMounted) return;
+      let filtered = [];
+      if (sellerId) {
+        filtered = allListings.filter(
+          (p) => p.sellerId === sellerId && (ENABLE_TICKETS || p.category !== 'Tickets')
+        );
+      } else if (livingCommunity) {
+        filtered = allListings.filter(
+          (p) =>
+            (p.livingCommunity === livingCommunity || p.location === livingCommunity) &&
+            (ENABLE_TICKETS || p.category !== 'Tickets')
+        );
+      }
+      setSellerListings(filtered);
+    });
+    return () => { isMounted = false; };
   }, [sellerId, livingCommunity]);
 
   // Toggle Selection Mode
