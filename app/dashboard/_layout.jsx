@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Image, Text } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import auth from '@react-native-firebase/auth';
+import auth from '../../src/services/firebaseAuth';
 import { useTheme } from '../../src/context/ThemeContext';
 import { getTheme, ASU } from '../../src/theme';
 

@@ -13,8 +13,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-import auth from '@react-native-firebase/auth';
+import { GoogleSignin, statusCodes } from '../../../services/googleSignin';
+import auth from '../../../services/firebaseAuth';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 

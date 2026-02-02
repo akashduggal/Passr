@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Image, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import auth from '@react-native-firebase/auth';
+import auth from '../../../services/firebaseAuth';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
