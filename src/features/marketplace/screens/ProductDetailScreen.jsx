@@ -71,11 +71,9 @@ const ALL_PRODUCTS = [
 function DetailRow({ value, icon, theme }) {
   if (value == null || value === '') return null;
   return (
-    <View style={detailStyles.row}>
+    <View style={[detailStyles.row, { borderColor: theme.border, backgroundColor: theme.surface }]}>
       {icon && (
-        <View style={detailStyles.iconWrap}>
-          <Ionicons name={icon} size={20} color={ASU.maroon} />
-        </View>
+        <Ionicons name={icon} size={16} color={ASU.maroon} />
       )}
       <Text style={[detailStyles.value, { color: theme.text }]} numberOfLines={1}>{value}</Text>
     </View>
@@ -84,18 +82,18 @@ function DetailRow({ value, icon, theme }) {
 
 const detailStyles = StyleSheet.create({
   row: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    borderWidth: 1,
     gap: 6,
+    alignSelf: 'flex-start',
   },
-  iconWrap: {},
   value: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
   },
 });
 
@@ -273,13 +271,13 @@ export default function ProductDetailScreen() {
               <DetailRow value={product.category} icon="grid-outline" theme={theme} />
               <DetailRow value={product.brand} icon="pricetag-outline" theme={theme} />
               <DetailRow value={livingCommunity} icon="location-outline" theme={theme} />
+              {product.category === 'Tickets' && (
+                <>
+                  <DetailRow value={product.eventDate} icon="calendar-outline" theme={theme} />
+                  <DetailRow value={product.venue} icon="business-outline" theme={theme} />
+                </>
+              )}
             </View>
-            {product.category === 'Tickets' && (product.eventDate || product.venue) && (
-              <View style={[styles.detailsRow, { marginTop: 4 }]}>
-                <DetailRow value={product.eventDate} icon="calendar-outline" theme={theme} />
-                <DetailRow value={product.venue} icon="business-outline" theme={theme} />
-              </View>
-            )}
           </View>
         )}
 
