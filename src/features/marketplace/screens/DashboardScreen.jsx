@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, StyleSheet, Platform, TouchableOpacity, ScrollView, Modal, Pressable } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Platform, TouchableOpacity, ScrollView, Modal, Pressable, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,19 +30,26 @@ export default function DashboardScreen() {
   const [selectedSortId, setSelectedSortId] = useState('newest');
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
 
-  const fetchListings = useCallback(async () => {
-    setIsLoading(true);
+  const fetchListings = useCallback(async (showLoader = true) => {
+    if (showLoader) setIsLoading(true);
     try {
       const data = await listingService.getAllListings();
       setAllProducts(data);
     } catch (error) {
       console.error('Failed to fetch listings:', error);
     } finally {
-      setIsLoading(false);
+      if (showLoader) setIsLoading(false);
     }
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await fetchListings(false);
+    setIsRefreshing(false);
+  }, [fetchListings]);
 
   useFocusEffect(
     useCallback(() => {
