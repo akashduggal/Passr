@@ -349,24 +349,14 @@ export default function ProductDetailScreen() {
       {(showMakeOffer || showWishlist) && (
         <View style={styles.actions}>
           {showMakeOffer && (
-            <>
-              <TouchableOpacity
-                style={styles.buyButton}
-                onPress={() => router.push({ pathname: '/checkout', params: { product: JSON.stringify(product) } })}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="cart-outline" size={20} color={ASU.black} />
-                <Text style={styles.buyButtonText}>Buy Now</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.messageButton}
-                onPress={() => setOfferModalVisible(true)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="chatbubble-outline" size={20} color={ASU.white} />
-                <Text style={styles.messageButtonText}>Make Offer</Text>
-              </TouchableOpacity>
-            </>
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={() => setOfferModalVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chatbubble-outline" size={20} color={ASU.white} />
+              <Text style={styles.messageButtonText}>Make Offer</Text>
+            </TouchableOpacity>
           )}
           {showWishlist && (
             <TouchableOpacity
