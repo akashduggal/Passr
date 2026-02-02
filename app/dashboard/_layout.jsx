@@ -1,22 +1,71 @@
-import { View, TouchableOpacity } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, TouchableOpacity, Image, Text } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import auth from '@react-native-firebase/auth';
 import { useTheme } from '../../src/context/ThemeContext';
-import { getTheme } from '../../src/theme';
+import { getTheme, ASU } from '../../src/theme';
 
 function HeaderRight() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
+  const [user, setUser] = useState(auth().currentUser);
+
+  useEffect(() => {
+    const subscriber = auth().onAuthStateChanged(setUser);
+    return subscriber;
+  }, []);
+
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16, gap: 12 }}>
       <TouchableOpacity
         onPress={() => router.push('/notifications')}
-        style={{ padding: 8 }}
+        style={{ 
+          padding: 8,
+          borderRadius: 20,
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+        }}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        activeOpacity={0.6}
+        activeOpacity={0.7}
       >
-        <Ionicons name="notifications-outline" size={24} color={theme.label} />
+        <Ionicons name="notifications-outline" size={22} color={theme.text} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => router.push('/profile/my-profile')}
+        activeOpacity={0.8}
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          borderWidth: 2,
+          borderColor: theme.surface,
+          overflow: 'hidden',
+          backgroundColor: ASU.maroon,
+          justifyContent: 'center',
+          alignItems: 'center',
+          shadowColor: "#000",
+          shadowOffset: {
+            width: 0,
+            height: 2,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 3.84,
+          elevation: 5,
+        }}
+      >
+        {user?.photoURL ? (
+          <Image 
+            source={{ uri: user.photoURL }} 
+            style={{ width: '100%', height: '100%' }} 
+            resizeMode="cover"
+          />
+        ) : (
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+            {user?.email?.charAt(0).toUpperCase() || 'U'}
+          </Text>
+        )}
       </TouchableOpacity>
     </View>
   );

@@ -77,7 +77,6 @@ export default function UserProfileScreen() {
   ];
 
   const navItems = [
-    { id: 'profile', title: 'My Profile', icon: 'person-outline', route: null },
     { id: 'notifications', title: 'Notification Settings', icon: 'notifications-outline', route: '/profile/notification-settings' },
     { id: 'privacy', title: 'Privacy and Data', icon: 'lock-closed-outline', route: null },
     { id: 'support', title: 'Support', icon: 'headset-outline', route: '/profile/support' },

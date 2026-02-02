@@ -10,10 +10,9 @@ import ProductTile from '../../../components/ProductTile';
 import ProductTileSkeleton from '../../../components/ProductTileSkeleton';
 
 const SORT_OPTIONS = [
+  { id: 'newest', label: 'Newest First' },
   { id: 'price_asc', label: 'Price: Low to High' },
   { id: 'price_desc', label: 'Price: High to Low' },
-  { id: 'newest', label: 'Newest First' },
-  { id: 'oldest', label: 'Oldest First' },
 ];
 
 export default function DashboardScreen() {
@@ -27,7 +26,7 @@ export default function DashboardScreen() {
   const baseCategories = ['Furniture', 'Electronics', 'Escooters', 'Kitchen'];
   const categories = ENABLE_TICKETS ? [...baseCategories, 'Tickets'] : baseCategories;
   const [selectedCategory, setSelectedCategory] = useState(0);
-  const [selectedSortId, setSelectedSortId] = useState('price_asc');
+  const [selectedSortId, setSelectedSortId] = useState('newest');
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -115,8 +114,6 @@ export default function DashboardScreen() {
         return arr.sort((a, b) => b.price - a.price);
       case 'newest':
         return arr.sort((a, b) => new Date(b.postedAt || 0) - new Date(a.postedAt || 0));
-      case 'oldest':
-        return arr.sort((a, b) => new Date(a.postedAt || 0) - new Date(b.postedAt || 0));
       default:
         return arr;
     }
