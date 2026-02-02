@@ -4,6 +4,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import auth from '../../src/services/firebaseAuth';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useNotifications } from '../../src/context/NotificationContext';
 import { getTheme, ASU } from '../../src/theme';
 
 function HeaderRight() {
@@ -11,6 +12,7 @@ function HeaderRight() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const [user, setUser] = useState(auth().currentUser);
+  const { unreadCount } = useNotifications();
 
   useEffect(() => {
     const subscriber = auth().onAuthStateChanged(setUser);
@@ -25,11 +27,34 @@ function HeaderRight() {
           padding: 8,
           borderRadius: 20,
           backgroundColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+          position: 'relative',
         }}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         activeOpacity={0.7}
       >
         <Ionicons name="notifications-outline" size={22} color={theme.text} />
+        {unreadCount > 0 && (
+          <View
+            style={{
+              position: 'absolute',
+              top: 4,
+              right: 6,
+              minWidth: 16,
+              height: 16,
+              borderRadius: 8,
+              backgroundColor: ASU.maroon,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderWidth: 1.5,
+              borderColor: theme.background,
+              paddingHorizontal: 2,
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Text>
+          </View>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity

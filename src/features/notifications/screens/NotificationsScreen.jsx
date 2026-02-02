@@ -1,15 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
+import { useNotifications } from '../../../context/NotificationContext';
 import { getTheme, ASU } from '../../../theme';
 
 const NOTIFICATION_TYPES = {
@@ -40,60 +42,8 @@ const NOTIFICATION_TYPES = {
   },
 };
 
-// Mock notifications – marketplace‑relevant events
-const MOCK_NOTIFICATIONS = [
-  {
-    id: '1',
-    type: 'offer',
-    title: 'New offer on your listing',
-    body: 'Jane Smith sent an offer of $42.',
-    listingTitle: 'Office Desk Chair',
-    listingId: '1',
-    buyerName: 'Jane Smith',
-    productPrice: 50,
-    offerAmount: 42,
-    createdAt: new Date(Date.now() - 15 * 60 * 1000),
-    read: false,
-  },
-  {
-    id: '2',
-    type: 'offer_accepted',
-    title: 'Offer accepted',
-    body: 'ASU Student accepted your $70 offer.',
-    listingTitle: 'Coffee Table',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    read: false,
-  },
-  {
-    id: '3',
-    type: 'message',
-    title: 'New message',
-    body: 'John Doe: "I can pick up tomorrow afternoon. Is that okay?"',
-    listingTitle: 'Office Desk Chair',
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    read: true,
-  },
-  {
-    id: '4',
-    type: 'pickup_scheduled',
-    title: 'Pickup scheduled',
-    body: 'Jan 26, 2026 at 3:00 PM — Tooker House lobby.',
-    listingTitle: 'Coffee Table',
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    read: true,
-  },
-  {
-    id: '5',
-    type: 'offer_rejected',
-    title: 'Offer declined',
-    body: 'Your $38 offer was declined.',
-    listingTitle: 'Bookshelf',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    read: true,
-  },
-];
-
-function formatTime(date) {
+function formatTime(dateInput) {
+  const date = new Date(dateInput);
   const now = new Date();
   const diffMs = now - date;
   const diffMins = Math.floor(diffMs / (1000 * 60));
@@ -108,9 +58,9 @@ function formatTime(date) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function getSectionLabel(date) {
+function getSectionLabel(dateInput) {
   const now = new Date();
-  const d = new Date(date);
+  const d = new Date(dateInput);
   d.setHours(0, 0, 0, 0);
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
@@ -126,11 +76,12 @@ export default function NotificationsScreen() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme);
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const { notifications, markAsRead, loading, fetchNotifications } = useNotifications();
 
   const grouped = useMemo(() => {
+    // Notifications are already sorted by date in context, but let's be safe
     const sorted = [...notifications].sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
     );
     const map = new Map();
     sorted.forEach((n) => {
@@ -140,12 +91,6 @@ export default function NotificationsScreen() {
     });
     return Array.from(map.entries());
   }, [notifications]);
-
-  const markAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
-  };
 
   const handleNotificationPress = (n) => {
     if (!n.read) markAsRead(n.id);
@@ -172,6 +117,9 @@ export default function NotificationsScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={fetchNotifications} />
+        }
       >
         {grouped.length === 0 ? (
           <View style={styles.emptyState}>
