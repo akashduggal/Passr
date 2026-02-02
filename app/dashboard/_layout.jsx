@@ -71,16 +71,6 @@ function HeaderRight() {
   );
 }
 
-function ProfileTabButton(props) {
-  const router = useRouter();
-  return (
-    <TouchableOpacity
-      {...props}
-      onPress={() => router.push('/user-profile')}
-      activeOpacity={0.6}
-    />
-  );
-}
 
 export default function DashboardLayout() {
   const { isDarkMode } = useTheme();
@@ -117,6 +107,7 @@ export default function DashboardLayout() {
         options={{
           title: 'Listing',
           tabBarLabel: '',
+          headerTransparent: true,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="add-outline" size={size ?? 24} color={color} />
           )
@@ -125,11 +116,13 @@ export default function DashboardLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: '',
+          title: 'Profile',
+          tabBarLabel: 'Profile',
+          headerShown: true,
+          headerTransparent: true,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="menu-outline" size={size ?? 24} color={color} />
+            <Ionicons name="person-outline" size={size ?? 24} color={color} />
           ),
-          tabBarButton: (props) => <ProfileTabButton {...props} />,
         }}
       />
     </Tabs>

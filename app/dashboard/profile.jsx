@@ -1,5 +1,5 @@
-import ProfileScreen from '../../src/features/profile/screens/ProfileScreen';
+import UserProfileScreen from '../../src/features/profile/screens/UserProfileScreen';
 
 export default function ProfileRoute() {
-  return <ProfileScreen />;
+  return <UserProfileScreen isTab={true} />;
 }

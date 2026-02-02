@@ -20,7 +20,7 @@ import { getTheme, ASU } from '../../../theme';
 const appName = Constants.expoConfig?.name ?? 'Passr';
 const appVersion = Constants.expoConfig?.version ?? '1.0.0';
 
-export default function UserProfileScreen() {
+export default function UserProfileScreen({ isTab = false }) {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -88,8 +88,9 @@ export default function UserProfileScreen() {
     icon: isDarkMode ? 'moon' : 'moon-outline',
   };
 
-  const styles = getStyles(theme);
+  const styles = getStyles(theme, insets, isTab);
   const hasSingleFeature = featureCards.length === 1;
+  const headerHeight = Platform.OS === 'ios' ? 44 : 56;
 
   const handleLogout = async () => {
     try {
@@ -126,23 +127,28 @@ export default function UserProfileScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header Section with Purple Background */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>John Doe</Text>
+      {/* Header Section with Purple Background - Only show if NOT in tab mode */}
+      {!isTab && (
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>John Doe</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={20} color={ASU.white} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="close" size={20} color={ASU.white} />
-        </TouchableOpacity>
-      </View>
+      )}
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isTab && { paddingTop: insets.top + headerHeight + 8 }
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Core Features Grid */}
@@ -247,7 +253,7 @@ export default function UserProfileScreen() {
   );
 }
 
-const getStyles = (theme) => StyleSheet.create({
+const getStyles = (theme, insets, isTab) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,

@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
@@ -33,7 +33,7 @@ const CONDITION_ICONS = {
 };
 const MAX_IMAGES = 6;
 const MAX_DESCRIPTION_LENGTH = 200;
-
+const headerHeight = Platform.OS === 'ios' ? 44 : 56;
 const BRANDS_BY_CATEGORY = {
   Furniture: ['IKEA', 'Wayfair', 'Ashley', 'West Elm', 'Target', 'Other'],
   Electronics: ['Apple', 'Samsung', 'Sony', 'LG', 'Dell', 'HP', 'Other'],
@@ -52,7 +52,7 @@ const LIVING_COMMUNITIES = [
   { id: 'district', label: 'The District on Apache' },
 ].sort((a, b) => a.label.localeCompare(b.label));
 
-export default function AddListingScreen() {
+export default function AddListingScreen({ isTab = false }) {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const [images, setImages] = useState([]);
@@ -70,7 +70,8 @@ export default function AddListingScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
   const [brandPickerVisible, setBrandPickerVisible] = useState(false);
-  const styles = getStyles(theme);
+  const insets = useSafeAreaInsets();
+  const styles = getStyles(theme, insets);
 
   const selectedCategoryLabel = selectedCategory ?? 'e.g. Furniture';
   const selectedLabel = selectedCommunity
@@ -225,10 +226,10 @@ export default function AddListingScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['bottom']}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + headerHeight + 8 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -485,13 +486,14 @@ export default function AddListingScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
-const getStyles = (theme) => StyleSheet.create({
+const getStyles = (theme, insets) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.background,
   },
   scroll: {
     flex: 1,
