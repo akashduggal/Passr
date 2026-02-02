@@ -1,10 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { getTheme, ASU } from '../theme';
-import ProductPreviewModal from './ProductPreviewModal';
 
 function formatPostedDate(postedAt) {
   if (!postedAt) return '';
@@ -35,13 +33,16 @@ function formatPostedDate(postedAt) {
   }
 }
 
-export default function ProductTile({ product, style }) {
+export default function ProductTile({ product, style, onPress, disabled }) {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
-  const [previewVisible, setPreviewVisible] = useState(false);
 
   const handlePress = () => {
+    if (onPress) {
+      onPress(product);
+      return;
+    }
     if (product.sold) return;
     router.push({
       pathname: '/product-detail',
@@ -65,7 +66,7 @@ export default function ProductTile({ product, style }) {
       style={[styles.productTile, style, isSold && styles.productTileDisabled]}
       activeOpacity={0.8}
       onPress={handlePress}
-      disabled={isSold}
+      disabled={disabled !== undefined ? disabled : isSold}
     >
       <View style={styles.productImageContainer}>
         {thumbnailUri ? (
@@ -89,18 +90,6 @@ export default function ProductTile({ product, style }) {
             <Text style={styles.soldBadgeText}>SOLD</Text>
           </View>
         )}
-        {!isSold && (
-          <TouchableOpacity
-            style={styles.quickViewButton}
-            onPress={(e) => {
-              e.stopPropagation && e.stopPropagation();
-              setPreviewVisible(true);
-            }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="eye-outline" size={20} color="#fff" />
-          </TouchableOpacity>
-        )}
       </View>
       <View style={styles.productInfo}>
         <Text style={styles.productTitle} numberOfLines={2}>
@@ -116,12 +105,6 @@ export default function ProductTile({ product, style }) {
           )}
         </View>
       </View>
-
-      <ProductPreviewModal
-        visible={previewVisible}
-        onClose={() => setPreviewVisible(false)}
-        product={product}
-      />
     </TouchableOpacity>
   );
 }
@@ -212,18 +195,6 @@ const getStyles = (theme) => StyleSheet.create({
     fontWeight: '700',
     color: ASU.white,
     letterSpacing: 0.5,
-  },
-  quickViewButton: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 16,
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
   },
   urgentBadge: {
     position: 'absolute',

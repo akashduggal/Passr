@@ -11,6 +11,7 @@ export default function SellerInfoCard({
   onPress,
   noCard = false,
   lightText = false,
+  otherItemCount = 0,
 }) {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
@@ -44,7 +45,17 @@ export default function SellerInfoCard({
           <View style={[styles.campusChip, lightText && styles.campusChipLight]}>
             <Text style={[styles.campusChipText, lightText && styles.campusChipTextLight]}>Arizona State University</Text>
           </View>
+          
+          {otherItemCount > 0 && !lightText && (
+            <View style={styles.otherItemsRow}>
+              <Ionicons name="layers-outline" size={14} color={ASU.maroon} />
+              <Text style={styles.otherItemsText}>View {otherItemCount} other listings</Text>
+            </View>
+          )}
         </View>
+        {onPress && !lightText && (
+           <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} style={{ marginLeft: 8 }} />
+        )}
       </CardWrapper>
     </View>
   );
@@ -149,5 +160,16 @@ const getStyles = (theme, lightText) => StyleSheet.create({
   },
   campusChipTextLight: {
     color: ASU.white,
+  },
+  otherItemsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  otherItemsText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: ASU.maroon,
   },
 });

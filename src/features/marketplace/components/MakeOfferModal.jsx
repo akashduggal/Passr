@@ -25,6 +25,7 @@ export default function MakeOfferModal({
   onClose,
   product,
   sellerListings = [],
+  initialSelectedIds = [],
   onSubmit,
 }) {
   const insets = useSafeAreaInsets();
@@ -44,12 +45,18 @@ export default function MakeOfferModal({
   // Reset state when modal opens
   useEffect(() => {
     if (visible && product) {
-      setSelectedProductIds([product.id]);
+      // If initialSelectedIds are provided, use them. 
+      // Otherwise default to just the main product.
+      if (initialSelectedIds && initialSelectedIds.length > 0) {
+         setSelectedProductIds(initialSelectedIds);
+      } else {
+         setSelectedProductIds([product.id]);
+      }
       setOfferPrice('');
       setMessage('');
       setPreviewProduct(null);
     }
-  }, [visible, product]);
+  }, [visible]); // Only run when visibility changes, not when product/ids reference changes during render
 
   const toggleSelection = (id) => {
     // Prevent deselecting the main product (optional rule, but makes sense for "making an offer on THIS product")
@@ -67,7 +74,9 @@ export default function MakeOfferModal({
   // Combine current product and other listings for display
   const allAvailableProducts = useMemo(() => {
     if (!product) return [];
-    return [product, ...sellerListings];
+    // Ensure uniqueness by filtering out the main product from sellerListings if present
+    const otherListings = sellerListings.filter(p => p.id !== product.id);
+    return [product, ...otherListings];
   }, [product, sellerListings]);
 
   // Calculate total listing price of selected items

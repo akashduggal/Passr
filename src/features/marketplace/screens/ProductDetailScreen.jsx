@@ -181,8 +181,6 @@ export default function ProductDetailScreen() {
     );
   }, [product.id, sellerId]);
 
-  const displayedSellerListings = allSellerListings.slice(0, 3);
-
   /** Resolve detail-view URI for carousel (WebP detail variant or legacy string). */
   const getDetailUri = (slot) => {
     if (!slot) return null;
@@ -302,44 +300,19 @@ export default function ProductDetailScreen() {
             location={livingCommunity}
             isVerified={true}
             showSectionTitle={true}
+            otherItemCount={allSellerListings.length}
+            onPress={() => {
+              router.push({
+                pathname: '/seller-profile',
+                params: {
+                  sellerId: sellerId || '',
+                  sellerName,
+                  livingCommunity: livingCommunity || '',
+                },
+              });
+            }}
           />
         </View>
-
-        {/* Seller's More Listings */}
-        {displayedSellerListings.length > 0 && (
-          <View style={styles.section}>
-            <TouchableOpacity
-              style={styles.sectionHeaderRow}
-              onPress={() => {
-                router.push({
-                  pathname: '/seller-profile',
-                  params: {
-                    sellerId: sellerId || '',
-                    sellerName,
-                    livingCommunity: livingCommunity || '',
-                  },
-                });
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.sectionTitleInRow}>{sellerName}'s More listings</Text>
-              <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
-            </TouchableOpacity>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.listingsScrollContent}
-            >
-              {displayedSellerListings.map((listing) => (
-                <ProductTile
-                  key={listing.id}
-                  product={listing}
-                  style={styles.horizontalTile}
-                />
-              ))}
-            </ScrollView>
-          </View>
-        )}
       </ScrollView>
 
       {/* Actions — Make an Offer and Wishlist only for buyers; sellers see neither on own listings */}
