@@ -169,7 +169,11 @@ export default function DashboardScreen() {
       <ScrollView 
         style={styles.content}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, { flexGrow: 1 }]}
+        alwaysBounceVertical={true}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+        }
       >
         <Modal
           visible={sortModalVisible}
