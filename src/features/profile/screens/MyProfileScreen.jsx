@@ -1,19 +1,54 @@
-import { View, Text, StyleSheet, Image, ScrollView, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, Image, ScrollView, Platform, TouchableOpacity } from 'react-native';
+import { useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import auth from '../../../services/firebaseAuth';
+import { GoogleSignin } from '../../../services/googleSignin';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 
 export default function MyProfileScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const user = auth().currentUser;
 
   const styles = getStyles(theme, insets);
+
+  const handleLogout = async () => {
+    try {
+      // Ensure Google Sign-In is configured
+      GoogleSignin.configure({
+        webClientId: '872459232362-fmrc9g7eiitgnps7i3uk6slau6ndhnkm.apps.googleusercontent.com',
+      });
+      
+      try {
+        await GoogleSignin.signOut();
+      } catch (e) {
+        // Ignore if Google Sign-In fails (e.g. not signed in)
+        console.log('Google sign out error:', e);
+      }
+
+      if (auth().currentUser) {
+        await auth().signOut();
+      }
+      
+      // Reset navigation stack to login screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'login' }],
+      });
+    } catch (error) {
+      console.error('Error signing out: ', error);
+      // Fallback reset
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'login' }],
+      });
+    }
+  };
 
   const InfoItem = ({ icon, label, value, isLast }) => (
     <View style={[styles.infoItem, isLast && styles.infoItemLast]}>
@@ -105,6 +140,16 @@ export default function MyProfileScreen() {
             isLast
           />
         </View>
+
+        {/* Logout Button */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="log-out-outline" size={20} color={ASU.white} />
+          <Text style={styles.logoutText}>Log Out</Text>
+        </TouchableOpacity>
 
       </ScrollView>
     </SafeAreaView>
@@ -253,5 +298,20 @@ const getStyles = (theme, insets) => StyleSheet.create({
     fontSize: 16,
     color: theme.text,
     fontWeight: '500',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: ASU.maroon,
+    padding: 16,
+    borderRadius: 16,
+    gap: 8,
+    marginBottom: 24,
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: ASU.white,
   },
 });
