@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "872459232362",
+    "project_id": "passr-87ef1",
+    "storage_bucket": "passr-87ef1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:872459232362:android:efc65a261841f48e8c1613",
+        "android_client_info": {
+          "package_name": "com.passr.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "872459232362-fmrc9g7eiitgnps7i3uk6slau6ndhnkm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyApL8MOrJ2sVbND-vdP1djiXo9DRwcQPJk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "872459232362-fmrc9g7eiitgnps7i3uk6slau6ndhnkm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

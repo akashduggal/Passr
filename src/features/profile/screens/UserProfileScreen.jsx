@@ -6,11 +6,14 @@ import {
   TouchableOpacity,
   Platform,
   Switch,
+  Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import auth from '@react-native-firebase/auth';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 import SellerInfoCard from '../../../components/SellerInfoCard';
@@ -20,6 +23,7 @@ const appVersion = Constants.expoConfig?.version ?? '1.0.0';
 
 export default function UserProfileScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { isDarkMode, toggleTheme } = useTheme();
   const theme = getTheme(isDarkMode);
@@ -88,6 +92,39 @@ export default function UserProfileScreen() {
 
   const styles = getStyles(theme);
   const hasSingleFeature = featureCards.length === 1;
+
+  const handleLogout = async () => {
+    try {
+      // Ensure Google Sign-In is configured
+      GoogleSignin.configure({
+        webClientId: '872459232362-fmrc9g7eiitgnps7i3uk6slau6ndhnkm.apps.googleusercontent.com',
+      });
+      
+      try {
+        await GoogleSignin.signOut();
+      } catch (e) {
+        // Ignore if Google Sign-In fails (e.g. not signed in)
+        console.log('Google sign out error:', e);
+      }
+
+      if (auth().currentUser) {
+        await auth().signOut();
+      }
+      
+      // Reset navigation stack to login screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'login' }],
+      });
+    } catch (error) {
+      console.error('Error signing out: ', error);
+      // Fallback reset
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'login' }],
+      });
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -174,7 +211,7 @@ export default function UserProfileScreen() {
           ))}
           
           {/* Dark Mode Toggle */}
-          <View style={[styles.navItem, styles.navItemLast, { borderBottomColor: theme.border }]}>
+          <View style={[styles.navItem, { borderBottomColor: theme.border }]}>
             <Ionicons
               name={darkModeItem.icon}
               size={24}
@@ -190,6 +227,21 @@ export default function UserProfileScreen() {
               ios_backgroundColor={ASU.gray5}
             />
           </View>
+
+          {/* Logout Button */}
+          <TouchableOpacity
+            style={[styles.navItem, styles.navItemLast, { borderBottomColor: theme.border }]}
+            onPress={handleLogout}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="log-out-outline"
+              size={24}
+              color={ASU.maroon}
+              style={styles.navIcon}
+            />
+            <Text style={[styles.navText, { color: ASU.maroon, fontWeight: '600' }]}>Log Out</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
