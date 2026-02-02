@@ -94,30 +94,34 @@ export default function MyListingsScreen() {
               <View key={listing.id} style={styles.listingWrapper}>
                 <ProductTile product={listing} style={styles.productTileFullWidth} />
                 
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={() => handleEditListing(listing)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="create-outline" size={16} color={theme.text} />
-                  <Text style={styles.editButtonText}>Edit</Text>
-                </TouchableOpacity>
+                {!listing.sold && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => handleEditListing(listing)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="create-outline" size={16} color={theme.text} />
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
 
-                {listing.offerCount > 0 ? (
-                  <TouchableOpacity
-                    style={styles.offersButton}
-                    onPress={() => handleViewOffers(listing)}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="cash" size={16} color={ASU.white} />
-                    <Text style={styles.offersButtonText}>
-                      {listing.offerCount} Offer{listing.offerCount > 1 ? 's' : ''}
-                    </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.noOffersBadge}>
-                    <Text style={styles.noOffersText}>No offers yet</Text>
-                  </View>
+                    {listing.offerCount > 0 ? (
+                      <TouchableOpacity
+                        style={styles.offersButton}
+                        onPress={() => handleViewOffers(listing)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="cash" size={16} color={ASU.white} />
+                        <Text style={styles.offersButtonText}>
+                          {listing.offerCount} Offer{listing.offerCount > 1 ? 's' : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={styles.noOffersBadge}>
+                        <Text style={styles.noOffersText}>No offers yet</Text>
+                      </View>
+                    )}
+                  </>
                 )}
               </View>
             ))}
