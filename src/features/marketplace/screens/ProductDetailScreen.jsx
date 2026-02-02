@@ -21,6 +21,7 @@ import { ENABLE_TICKETS } from '../../../constants/featureFlags';
 import { CURRENT_USER_ID, getSellerName } from '../../../constants/currentUser';
 import ProductTile from '../../../components/ProductTile';
 import SellerInfoCard from '../../../components/SellerInfoCard';
+import MakeOfferModal from '../components/MakeOfferModal';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CAROUSEL_HEIGHT = 300;
@@ -122,7 +123,15 @@ export default function ProductDetailScreen() {
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+        {/* Bundle Offer Modal */}
+      <MakeOfferModal
+        visible={offerModalVisible}
+        onClose={() => setOfferModalVisible(false)}
+        product={product}
+        sellerListings={allSellerListings}
+        onSubmit={handleOfferSubmit}
+      />
+    </SafeAreaView>
     );
   }
 
@@ -152,16 +161,33 @@ export default function ProductDetailScreen() {
     setFullScreenImageIndex(null);
   };
 
-  // Get seller's other listings (same sellerId, exclude current product, max 3)
-  const sellerListings = useMemo(() => {
+  const handleOfferSubmit = (offerData) => {
+    // In a real app, you would send this to the backend
+    console.log('Offer submitted:', offerData);
+    
+    // For demo purposes, we'll just show an alert or toast logic if we had one.
+    // Navigate to chat or show success message
+    router.push({
+      pathname: '/chat',
+      params: { 
+        productId: product.id,
+        offerData: JSON.stringify(offerData)
+      }
+    });
+  };
+
+  // Get seller's other listings (same sellerId, exclude current product)
+  const allSellerListings = useMemo(() => {
     if (!sellerId) return [];
     return ALL_PRODUCTS.filter(
       (p) =>
         p.id !== product.id &&
         p.sellerId === sellerId &&
         (ENABLE_TICKETS || p.category !== 'Tickets')
-    ).slice(0, 3);
+    );
   }, [product.id, sellerId]);
+
+  const displayedSellerListings = allSellerListings.slice(0, 3);
 
   /** Resolve detail-view URI for carousel (WebP detail variant or legacy string). */
   const getDetailUri = (slot) => {
@@ -182,7 +208,7 @@ export default function ProductDetailScreen() {
       <Pressable
         key={index}
         style={styles.carouselPage}
-        onPress={() => uri && openFullScreenImage(index)}
+        onPress={() => detailUri && openFullScreenImage(index)}
       >
         {shouldLoad ? (
           <Image source={{ uri: detailUri }} style={styles.carouselImage} resizeMode="contain" />
@@ -286,7 +312,7 @@ export default function ProductDetailScreen() {
         </View>
 
         {/* Seller's More Listings */}
-        {sellerListings.length > 0 && (
+        {displayedSellerListings.length > 0 && (
           <View style={styles.section}>
             <TouchableOpacity
               style={styles.sectionHeaderRow}
@@ -310,7 +336,7 @@ export default function ProductDetailScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.listingsScrollContent}
             >
-              {sellerListings.map((listing) => (
+              {displayedSellerListings.map((listing) => (
                 <ProductTile
                   key={listing.id}
                   product={listing}
@@ -328,9 +354,7 @@ export default function ProductDetailScreen() {
           {showMakeOffer && (
             <TouchableOpacity
               style={styles.messageButton}
-              onPress={() => {
-                // Implement make offer logic
-              }}
+              onPress={() => setOfferModalVisible(true)}
               activeOpacity={0.7}
             >
               <Ionicons name="chatbubble-outline" size={20} color={ASU.white} />
@@ -350,6 +374,14 @@ export default function ProductDetailScreen() {
           )}
         </View>
       )}
+      {/* Bundle Offer Modal */}
+      <MakeOfferModal
+        visible={offerModalVisible}
+        onClose={() => setOfferModalVisible(false)}
+        product={product}
+        sellerListings={allSellerListings}
+        onSubmit={handleOfferSubmit}
+      />
     </SafeAreaView>
   );
 }
