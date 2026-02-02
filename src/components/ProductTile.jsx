@@ -1,8 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { getTheme, ASU } from '../theme';
+import ProductPreviewModal from './ProductPreviewModal';
 
 function formatPostedDate(postedAt) {
   if (!postedAt) return '';
@@ -37,6 +39,7 @@ export default function ProductTile({ product, style }) {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
+  const [previewVisible, setPreviewVisible] = useState(false);
 
   const handlePress = () => {
     if (product.sold) return;
@@ -86,6 +89,18 @@ export default function ProductTile({ product, style }) {
             <Text style={styles.soldBadgeText}>SOLD</Text>
           </View>
         )}
+        {!isSold && (
+          <TouchableOpacity
+            style={styles.quickViewButton}
+            onPress={(e) => {
+              e.stopPropagation && e.stopPropagation();
+              setPreviewVisible(true);
+            }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="eye-outline" size={20} color="#fff" />
+          </TouchableOpacity>
+        )}
       </View>
       <View style={styles.productInfo}>
         <Text style={styles.productTitle} numberOfLines={2}>
@@ -101,6 +116,12 @@ export default function ProductTile({ product, style }) {
           )}
         </View>
       </View>
+
+      <ProductPreviewModal
+        visible={previewVisible}
+        onClose={() => setPreviewVisible(false)}
+        product={product}
+      />
     </TouchableOpacity>
   );
 }
@@ -191,6 +212,18 @@ const getStyles = (theme) => StyleSheet.create({
     fontWeight: '700',
     color: ASU.white,
     letterSpacing: 0.5,
+  },
+  quickViewButton: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   urgentBadge: {
     position: 'absolute',

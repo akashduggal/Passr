@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
+import ProductPreviewModal from '../../../components/ProductPreviewModal';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -252,56 +253,11 @@ export default function MakeOfferModal({
       </View>
 
       {/* Product Preview Modal */}
-      <Modal
+      <ProductPreviewModal
         visible={!!previewProduct}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setPreviewProduct(null)}
-      >
-        <View style={styles.previewOverlay}>
-          <View style={styles.previewContainer}>
-            <TouchableOpacity 
-              style={styles.previewCloseButton}
-              onPress={() => setPreviewProduct(null)}
-            >
-              <Ionicons name="close" size={24} color="#fff" />
-            </TouchableOpacity>
-
-            <ScrollView bounces={false}>
-              {previewProduct && previewProduct.images && previewProduct.images.length > 0 ? (
-                <Image 
-                  source={typeof previewProduct.images[0] === 'string' ? { uri: previewProduct.images[0] } : previewProduct.images[0]} 
-                  style={styles.previewImage} 
-                />
-              ) : (
-                <View style={[styles.previewImage, styles.placeholderImage]}>
-                  <Ionicons name="image-outline" size={64} color={theme.textSecondary} />
-                </View>
-              )}
-
-              <View style={styles.previewContent}>
-                <View style={styles.previewHeader}>
-                  <Text style={styles.previewTitle}>{previewProduct?.title}</Text>
-                  <Text style={styles.previewPrice}>${previewProduct?.price}</Text>
-                </View>
-                
-                <View style={styles.previewMeta}>
-                   {previewProduct?.condition && (
-                     <View style={styles.conditionBadge}>
-                       <Text style={styles.conditionText}>{previewProduct.condition}</Text>
-                     </View>
-                   )}
-                </View>
-
-                <Text style={styles.sectionTitle}>Description</Text>
-                <Text style={styles.previewDescription}>
-                  {previewProduct?.description || "No description provided."}
-                </Text>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        product={previewProduct}
+        onClose={() => setPreviewProduct(null)}
+      />
     </Modal>
   );
 }
@@ -384,78 +340,6 @@ const getStyles = (theme, insets) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
-  },
-  previewOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  previewContainer: {
-    width: '100%',
-    maxHeight: '75%',
-    backgroundColor: theme.surface,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  previewImage: {
-    width: '100%',
-    height: 300,
-    resizeMode: 'cover',
-  },
-  previewContent: {
-    padding: 24,
-  },
-  previewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  previewTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: theme.text,
-    flex: 1,
-    marginRight: 12,
-  },
-  previewPrice: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: ASU.maroon,
-  },
-  previewMeta: {
-    flexDirection: 'row',
-    marginBottom: 24,
-  },
-  conditionBadge: {
-    backgroundColor: theme.background,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 100,
-  },
-  conditionText: {
-    fontSize: 14,
-    color: theme.textSecondary,
-    fontWeight: '600',
-  },
-  previewDescription: {
-    fontSize: 16,
-    color: theme.text,
-    lineHeight: 24,
-  },
-  previewCloseButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 20,
   },
   imageContainer: {
     width: '100%',
