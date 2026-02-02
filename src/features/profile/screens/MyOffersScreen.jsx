@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   FlatList,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -119,6 +120,8 @@ export default function MyOffersScreen() {
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme);
   const [activeFilter, setActiveFilter] = useState('All'); // All, Single, Bundle
+  const [selectedBundle, setSelectedBundle] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const filteredOffers = useMemo(() => {
     if (activeFilter === 'All') return MOCK_OFFERS;
@@ -143,30 +146,19 @@ export default function MyOffersScreen() {
     }
   };
 
+  const handleBundlePress = (offer) => {
+    setSelectedBundle(offer);
+    setModalVisible(true);
+  };
+
+  const closeBundleModal = () => {
+    setModalVisible(false);
+    setSelectedBundle(null);
+  };
+
   const handleOfferPress = (offer) => {
     if (offer.type === 'bundle') {
-      // For bundle offers, navigate to Seller's Listings Page (Seller Profile)
-      router.push({
-        pathname: '/seller-profile',
-        params: {
-          sellerId: 'user-2', // Mock ID since not in offer object yet
-          sellerName: offer.sellerName,
-        },
-      });
-    } else {
-      // For single offers, navigate to Product Detail
-      router.push({
-        pathname: '/product-detail',
-        params: {
-          product: JSON.stringify({
-            id: offer.items[0].id,
-            title: offer.items[0].title,
-            price: offer.items[0].price,
-            image: offer.items[0].image,
-            sellerId: 'user-2',
-          }),
-        },
-      });
+      handleBundlePress(offer);
     }
   };
 
@@ -336,6 +328,90 @@ export default function MyOffersScreen() {
           </View>
         }
       />
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={closeBundleModal}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={closeBundleModal}
+        >
+          <TouchableOpacity 
+            style={styles.modalContent} 
+            activeOpacity={1} 
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Bundle Offer Details</Text>
+              <TouchableOpacity onPress={closeBundleModal}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedBundle && (
+              <>
+                <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                  <Text style={styles.bundleSectionTitle}>Items in this bundle</Text>
+                  {selectedBundle.items.map((item) => (
+                    <View key={item.id} style={styles.bundleItemRow}>
+                      <View style={styles.bundleItemImage}>
+                         {item.image ? (
+                           <Image source={{ uri: item.image }} style={styles.image} />
+                         ) : (
+                           <View style={styles.imagePlaceholder}>
+                             <Ionicons name="image-outline" size={20} color={ASU.gray4} />
+                           </View>
+                         )}
+                      </View>
+                      <View style={styles.bundleItemInfo}>
+                        <Text style={styles.bundleItemTitle}>{item.title}</Text>
+                        <Text style={styles.bundleItemPrice}>${item.price}</Text>
+                      </View>
+                    </View>
+                  ))}
+                  <View style={{ height: 20 }} />
+                </ScrollView>
+
+                <View style={styles.modalFooter}>
+                  <View style={styles.modalFooterRow}>
+                    <Text style={styles.modalLabel}>Total Value</Text>
+                    <Text style={styles.modalValue}>${selectedBundle.totalValue}</Text>
+                  </View>
+                  <View style={[styles.modalFooterRow, styles.modalTotalRow]}>
+                    <Text style={styles.modalTotalLabel}>Your Offer</Text>
+                    <Text style={styles.modalTotalValue}>${selectedBundle.offerAmount}</Text>
+                  </View>
+                  
+                  {selectedBundle.status === 'accepted' && (
+                    <TouchableOpacity
+                      style={styles.chatButton}
+                      onPress={() => {
+                        closeBundleModal();
+                        router.push({
+                          pathname: '/chat',
+                          params: {
+                            offerAmount: selectedBundle.offerAmount.toString(),
+                            productTitle: 'Bundle Offer',
+                            productPrice: selectedBundle.totalValue.toString(),
+                          },
+                        });
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="chatbubble-outline" size={16} color={ASU.white} />
+                      <Text style={styles.chatButtonText}>Chat with Seller</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -561,5 +637,110 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: ASU.white,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: theme.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    width: '100%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.text,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  bundleSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.textSecondary,
+    marginBottom: 12,
+  },
+  bundleItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: theme.background,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  bundleItemImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: ASU.gray6,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  bundleItemInfo: {
+    flex: 1,
+  },
+  bundleItemTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.text,
+    marginBottom: 4,
+  },
+  bundleItemPrice: {
+    fontSize: 13,
+    color: theme.textSecondary,
+  },
+  modalFooter: {
+    padding: 20,
+    paddingBottom: 40,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    backgroundColor: theme.surface,
+  },
+  modalFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTotalRow: {
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    marginBottom: 0,
+  },
+  modalLabel: {
+    fontSize: 14,
+    color: theme.textSecondary,
+  },
+  modalValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.text,
+    textDecorationLine: 'line-through',
+  },
+  modalTotalLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.text,
+  },
+  modalTotalValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: ASU.maroon,
   },
 });
