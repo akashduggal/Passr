@@ -92,19 +92,14 @@ export default function MyListingsScreen() {
           <View style={styles.listingsGrid}>
             {listings.map((listing) => (
               <View key={listing.id} style={styles.listingWrapper}>
-                <ProductTile product={listing} style={styles.productTileFullWidth} />
+                <ProductTile 
+                  product={listing} 
+                  style={styles.productTileFullWidth} 
+                  onPress={() => handleEditListing(listing)}
+                />
                 
                 {!listing.sold && (
                   <>
-                    <TouchableOpacity
-                      style={styles.editButton}
-                      onPress={() => handleEditListing(listing)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="create-outline" size={16} color={theme.text} />
-                      <Text style={styles.editButtonText}>Edit</Text>
-                    </TouchableOpacity>
-
                     {listing.offerCount > 0 ? (
                       <TouchableOpacity
                         style={styles.offersButton}
@@ -217,23 +212,5 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: theme.textSecondary,
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 8,
-    paddingVertical: 8,
-    marginTop: 8,
-    gap: 6,
-    width: '100%',
-  },
-  editButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.text,
   },
 });
