@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,94 +7,57 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 import ProductTile from '../../../components/ProductTile';
-import { ENABLE_TICKETS } from '../../../constants/featureFlags';
-
-// Mock listings data - listings created by the current user (seller)
-const BASE_LISTINGS = [
-  {
-    id: 1,
-    sellerId: 'user-1',
-    title: 'Office Desk Chair',
-    price: 45,
-    condition: 'Like New',
-    category: 'Furniture',
-    brand: 'IKEA',
-    livingCommunity: 'Tooker',
-    images: null,
-    offerCount: 3,
-    sold: false,
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 2,
-    sellerId: 'user-1',
-    title: 'Coffee Table',
-    price: 80,
-    condition: 'Good',
-    category: 'Furniture',
-    brand: 'Wayfair',
-    livingCommunity: 'Paseo on University',
-    images: null,
-    offerCount: 1,
-    sold: false,
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 3,
-    sellerId: 'user-1',
-    title: 'MacBook Pro 13"',
-    price: 850,
-    condition: 'Like New',
-    category: 'Electronics',
-    brand: 'Apple',
-    livingCommunity: 'The Hyve',
-    images: null,
-    offerCount: 0,
-    sold: true,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-  },
-];
-
-const TICKET_LISTINGS = [
-  {
-    id: 4,
-    sellerId: 'user-1',
-    title: 'Taylor Swift – Eras Tour',
-    price: 185,
-    condition: 'New',
-    category: 'Tickets',
-    brand: 'Concert',
-    livingCommunity: 'Tooker',
-    eventDate: 'Sat, Mar 15 · 7:00 PM',
-    venue: 'State Farm Stadium, Glendale',
-    images: null,
-    offerCount: 1,
-    sold: false,
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  },
-];
-
-const MOCK_LISTINGS = ENABLE_TICKETS ? [...BASE_LISTINGS, ...TICKET_LISTINGS] : BASE_LISTINGS;
+import { listingService } from '../../../services/ListingService';
 
 export default function MyListingsScreen() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
-  const [listings] = useState(MOCK_LISTINGS);
+  const [listings, setListings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const styles = getStyles(theme);
+
+  const fetchMyListings = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Hardcoded user-1 for now, similar to Dashboard logic
+      const data = await listingService.getMyListings('user-1');
+      setListings(data);
+    } catch (error) {
+      console.error('Failed to fetch my listings:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchMyListings();
+    }, [fetchMyListings])
+  );
 
   const handleViewOffers = (listing) => {
     router.push({
       pathname: '/profile/listing-offers',
       params: {
         listing: JSON.stringify(listing),
+      },
+    });
+  };
+
+  const handleEditListing = (listing) => {
+    router.push({
+      pathname: '/dashboard/add-listing',
+      params: {
+        listingData: JSON.stringify(listing),
       },
     });
   };
@@ -106,7 +69,11 @@ export default function MyListingsScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 20 }]}
         showsVerticalScrollIndicator={false}
       >
-        {listings.length === 0 ? (
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={ASU.maroon} />
+          </View>
+        ) : listings.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={64} color={theme.textSecondary} />
             <Text style={styles.emptyTitle}>No Listings Yet</Text>
@@ -126,6 +93,16 @@ export default function MyListingsScreen() {
             {listings.map((listing) => (
               <View key={listing.id} style={styles.listingWrapper}>
                 <ProductTile product={listing} style={styles.productTileFullWidth} />
+                
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => handleEditListing(listing)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="create-outline" size={16} color={theme.text} />
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+
                 {listing.offerCount > 0 ? (
                   <TouchableOpacity
                     style={styles.offersButton}
@@ -236,5 +213,23 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: theme.textSecondary,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 8,
+    paddingVertical: 8,
+    marginTop: 8,
+    gap: 6,
+    width: '100%',
+  },
+  editButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.text,
   },
 });

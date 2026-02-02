@@ -13,6 +13,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +22,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 import { ENABLE_TICKETS } from '../../../constants/featureFlags';
 import { compressListingImage } from '../../../utils/imageCompression';
+import { listingService } from '../../../services/ListingService';
 
 const BASE_CATEGORIES = ['Furniture', 'Electronics', 'Escooters', 'Kitchen'];
 const CATEGORIES = ENABLE_TICKETS ? [...BASE_CATEGORIES, 'Tickets'] : BASE_CATEGORIES;
@@ -53,20 +55,31 @@ const LIVING_COMMUNITIES = [
 ].sort((a, b) => a.label.localeCompare(b.label));
 
 export default function AddListingScreen({ isTab = false }) {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const editingListing = params.listingData ? JSON.parse(params.listingData) : null;
+  const isEditing = !!editingListing;
+
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
-  const [images, setImages] = useState([]);
+  
+  const initialCommunityId = editingListing?.livingCommunity 
+    ? LIVING_COMMUNITIES.find(c => c.label === editingListing.livingCommunity)?.id || editingListing.livingCommunity
+    : null;
+
+  const [images, setImages] = useState(editingListing?.images || []);
   const [isCompressing, setIsCompressing] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedBrand, setSelectedBrand] = useState(null);
-  const [selectedCondition, setSelectedCondition] = useState(null);
-  const [selectedCommunity, setSelectedCommunity] = useState(null);
-  const [isUrgent, setIsUrgent] = useState(false);
-  const [eventDate, setEventDate] = useState('');
-  const [venue, setVenue] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [title, setTitle] = useState(editingListing?.title || '');
+  const [description, setDescription] = useState(editingListing?.description || '');
+  const [price, setPrice] = useState(editingListing?.price ? editingListing.price.toString() : '');
+  const [selectedCategory, setSelectedCategory] = useState(editingListing?.category || null);
+  const [selectedBrand, setSelectedBrand] = useState(editingListing?.brand || null);
+  const [selectedCondition, setSelectedCondition] = useState(editingListing?.condition || null);
+  const [selectedCommunity, setSelectedCommunity] = useState(initialCommunityId);
+  const [isUrgent, setIsUrgent] = useState(editingListing?.urgent || false);
+  const [eventDate, setEventDate] = useState(editingListing?.eventDate || '');
+  const [venue, setVenue] = useState(editingListing?.venue || '');
   const [pickerVisible, setPickerVisible] = useState(false);
   const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
   const [brandPickerVisible, setBrandPickerVisible] = useState(false);
@@ -87,15 +100,25 @@ export default function AddListingScreen({ isTab = false }) {
   const selectedBrandLabel = selectedBrand ?? brandPlaceholder;
 
   useEffect(() => {
-    setSelectedBrand(null);
-  }, [selectedCategory]);
-
-  useEffect(() => {
-    if (selectedCategory !== 'Tickets') {
-      setEventDate('');
-      setVenue('');
+    if (editingListing) {
+      setTitle(editingListing.title || '');
+      setDescription(editingListing.description || '');
+      setPrice(editingListing.price ? editingListing.price.toString() : '');
+      setSelectedCategory(editingListing.category || null);
+      setSelectedBrand(editingListing.brand || null);
+      setSelectedCondition(editingListing.condition || null);
+      
+      const communityId = editingListing.livingCommunity 
+        ? LIVING_COMMUNITIES.find(c => c.label === editingListing.livingCommunity)?.id || editingListing.livingCommunity
+        : null;
+      setSelectedCommunity(communityId);
+      
+      setIsUrgent(editingListing.urgent || false);
+      setEventDate(editingListing.eventDate || '');
+      setVenue(editingListing.venue || '');
+      setImages(editingListing.images || []);
     }
-  }, [selectedCategory]);
+  }, [params.listingData]);
 
   const requestMediaLibraryPermission = async () => {
     if (Platform.OS === 'web') return true;
@@ -223,6 +246,71 @@ export default function AddListingScreen({ isTab = false }) {
         )}
       </View>
     );
+  };
+
+  const handleSubmit = async () => {
+    if (!title || !description || !price || !selectedCategory || !selectedCondition || !selectedCommunity) {
+      Alert.alert('Missing Fields', 'Please fill in all required fields.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const listingData = {
+        title,
+        description,
+        price: parseFloat(price),
+        category: selectedCategory,
+        brand: selectedBrand,
+        condition: selectedCondition,
+        livingCommunity: selectedCommunity 
+          ? LIVING_COMMUNITIES.find(c => c.id === selectedCommunity)?.label || selectedCommunity
+          : null,
+        urgent: isUrgent,
+        eventDate,
+        venue,
+        images,
+      };
+
+      if (isEditing) {
+        await listingService.updateListing({
+          ...listingData,
+          id: editingListing.id,
+        });
+        Alert.alert('Success', 'Listing updated successfully!', [
+          {
+            text: 'OK',
+            onPress: () => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.push('/dashboard');
+              }
+            },
+          },
+        ]);
+      } else {
+        await listingService.addListing(listingData);
+        Alert.alert('Success', 'Listing posted successfully!', [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Clear form
+              setTitle('');
+              setDescription('');
+              setPrice('');
+              setImages([]);
+              router.push('/dashboard');
+            },
+          },
+        ]);
+      }
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Something went wrong.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -485,6 +573,21 @@ export default function AddListingScreen({ isTab = false }) {
             />
           </View>
         )}
+
+        <TouchableOpacity
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+          activeOpacity={0.8}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.submitButtonText}>
+              {isEditing ? 'Update Listing' : 'Post Listing'}
+            </Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -731,5 +834,22 @@ const getStyles = (theme, insets) => StyleSheet.create({
   },
   picker: {
     width: '100%',
+  },
+  submitButton: {
+    backgroundColor: ASU.maroon,
+    height: 50,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 24,
+  },
+  submitButtonDisabled: {
+    opacity: 0.7,
+  },
+  submitButtonText: {
+    color: ASU.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
