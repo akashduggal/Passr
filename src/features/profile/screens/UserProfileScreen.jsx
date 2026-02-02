@@ -16,7 +16,6 @@ import { GoogleSignin } from '../../../services/googleSignin';
 import auth from '../../../services/firebaseAuth';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
-import SellerInfoCard from '../../../components/SellerInfoCard';
 
 const appName = Constants.expoConfig?.name ?? 'Passr';
 const appVersion = Constants.expoConfig?.version ?? '1.0.0';
@@ -130,12 +129,7 @@ export default function UserProfileScreen() {
       {/* Header Section with Purple Background */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <SellerInfoCard
-            sellerName="John doe"
-            location="Tempe campus"
-            noCard={true}
-            lightText={true}
-          />
+          <Text style={styles.headerTitle}>John Doe</Text>
         </View>
         <TouchableOpacity
           style={styles.closeButton}
@@ -261,46 +255,25 @@ const getStyles = (theme) => StyleSheet.create({
   header: {
     backgroundColor: ASU.maroon,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 40,
+    paddingBottom: 20,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     position: 'relative',
   },
   headerContent: {
-    flexDirection: 'row',
     alignItems: 'center',
-  },
-  profileImageContainer: {
-    marginRight: 16,
-  },
-  profileImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: ASU.white,
     justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: ASU.white,
+    width: '100%',
   },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 22,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: '700',
     color: ASU.white,
-    marginBottom: 4,
-  },
-  userSubtitle: {
-    fontSize: 14,
-    color: ASU.white,
-    opacity: 0.9,
   },
   closeButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 30,
+    top: Platform.OS === 'ios' ? 55 : 35,
     right: 20,
     width: 36,
     height: 36,
