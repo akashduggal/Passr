@@ -55,7 +55,7 @@ export default function MyListingsScreen() {
 
   const handleEditListing = (listing) => {
     router.push({
-      pathname: '/dashboard/add-listing',
+      pathname: '/edit-listing',
       params: {
         listingData: JSON.stringify(listing),
       },
