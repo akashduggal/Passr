@@ -16,6 +16,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
+import { useWishlist } from '../../../context/WishlistContext';
 import { getTheme, ASU } from '../../../theme';
 import { ENABLE_TICKETS } from '../../../constants/featureFlags';
 import { CURRENT_USER_ID, getSellerName } from '../../../constants/currentUser';
@@ -105,6 +106,7 @@ export default function ProductDetailScreen() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme);
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const headerHeight = Platform.OS === 'ios' ? 44 : 56;
   const topPadding = insets.top + headerHeight;
 
@@ -356,12 +358,14 @@ export default function ProductDetailScreen() {
           {showWishlist && (
             <TouchableOpacity
               style={styles.wishlistButton}
-              onPress={() => {
-                // Implement wishlist logic
-              }}
+              onPress={() => toggleWishlist(product)}
               activeOpacity={0.7}
             >
-              <Ionicons name="heart-outline" size={24} color={theme.text} />
+              <Ionicons 
+                name={isInWishlist(product.id) ? "heart" : "heart-outline"} 
+                size={24} 
+                color={isInWishlist(product.id) ? ASU.maroon : theme.text} 
+              />
             </TouchableOpacity>
           )}
         </View>

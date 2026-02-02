@@ -65,15 +65,15 @@ export default function UserProfileScreen() {
       iconColor: ASU.pink,
       route: '/profile/past-orders',
     },
-    // {
-    //   id: 'wishlist',
-    //   title: 'My Wishlist',
-    //   description: 'Find your saved items',
-    //   icon: 'heart-outline',
-    //   backgroundColor: ASU.gray6,
-    //   iconColor: ASU.orange,
-    //   route: '/profile/my-wishlist',
-    // },
+    {
+      id: 'wishlist',
+      title: 'My Wishlist',
+      description: 'Find your saved items',
+      icon: 'heart-outline',
+      backgroundColor: ASU.gray6,
+      iconColor: ASU.orange,
+      route: '/profile/my-wishlist',
+    },
   ];
 
   const navItems = [

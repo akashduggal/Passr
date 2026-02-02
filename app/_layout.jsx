@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { FilterProvider } from '../src/context/FilterContext';
 import { ThemeProvider } from '../src/context/ThemeContext';
+import { WishlistProvider } from '../src/context/WishlistContext';
 import AppSplashScreen from '../src/components/AppSplashScreen';
 
 // Keep the splash screen visible while we fetch resources
@@ -48,8 +49,9 @@ export default function Layout() {
   return (
     <ThemeProvider>
       <FilterProvider>
-        <View style={{ flex: 1 }}>
-          <Stack
+        <WishlistProvider>
+          <View style={{ flex: 1 }}>
+            <Stack
             screenOptions={{
               headerBackTitleVisible: false,
             }}
@@ -129,8 +131,9 @@ export default function Layout() {
             </Animated.View>
           )}
         </View>
-      </FilterProvider>
-    </ThemeProvider>
+      </WishlistProvider>
+    </FilterProvider>
+  </ThemeProvider>
   );
 }
 
