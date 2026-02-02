@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -124,13 +124,12 @@ export default function SellerProfileScreen() {
   }, [selectedIds, sellerListings]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen options={{ title: `${sellerName}'s More Listings` }} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent, 
-          { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 20 },
           isSelectionMode && { paddingBottom: 100 }
         ]}
         showsVerticalScrollIndicator={false}
