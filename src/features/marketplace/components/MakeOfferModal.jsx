@@ -13,9 +13,11 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
+import { getSellerName } from '../../../constants/currentUser';
 import ProductPreviewModal from '../../../components/ProductPreviewModal';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -28,6 +30,7 @@ export default function MakeOfferModal({
   initialSelectedIds = [],
   onSubmit,
 }) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
@@ -52,26 +55,11 @@ export default function MakeOfferModal({
       } else {
          setSelectedProductIds([product.id]);
       }
-      setOfferPrice('');
       setMessage('');
       setPreviewProduct(null);
     }
   }, [visible]); // Only run when visibility changes, not when product/ids reference changes during render
 
-  const toggleSelection = (id) => {
-    // Prevent deselecting the main product (optional rule, but makes sense for "making an offer on THIS product")
-    if (id === product.id) return;
-
-    setSelectedProductIds((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((pid) => pid !== id);
-      } else {
-        return [...prev, id];
-      }
-    });
-  };
-
-  // Combine current product and other listings for display
   const allAvailableProducts = useMemo(() => {
     if (!product) return [];
     // Ensure uniqueness by filtering out the main product from sellerListings if present
@@ -79,25 +67,51 @@ export default function MakeOfferModal({
     return [product, ...otherListings];
   }, [product, sellerListings]);
 
+  // Get only the selected products
+  const selectedItems = useMemo(() => {
+    // If we have explicit initial selections, use those
+    if (initialSelectedIds && initialSelectedIds.length > 0) {
+      // Combine product + sellerListings to find the full objects
+      const allItems = [product, ...sellerListings];
+      // Filter for unique items by ID
+      const uniqueItems = Array.from(new Map(allItems.map(item => [item.id, item])).values());
+      return uniqueItems.filter(p => initialSelectedIds.includes(p.id));
+    }
+    // Otherwise just the main product
+    return [product];
+  }, [product, sellerListings, initialSelectedIds]);
+
   // Calculate total listing price of selected items
   const totalListingPrice = useMemo(() => {
-    return allAvailableProducts
-      .filter((p) => selectedProductIds.includes(p.id))
-      .reduce((sum, p) => sum + (p.price || 0), 0);
-  }, [allAvailableProducts, selectedProductIds]);
+    return selectedItems.reduce((sum, p) => sum + (p.price || 0), 0);
+  }, [selectedItems]);
 
-  // Update offer price when selection changes
+  // Update offer price when selection changes or modal opens
   useEffect(() => {
-    setOfferPrice(totalListingPrice > 0 ? totalListingPrice.toString() : '');
-  }, [totalListingPrice]);
+    if (visible) {
+      setOfferPrice(totalListingPrice > 0 ? totalListingPrice.toString() : '');
+    }
+  }, [totalListingPrice, visible]);
+
+  const handleBundlePromoPress = () => {
+    onClose();
+    router.push({
+      pathname: '/seller-profile',
+      params: {
+        sellerId: product.sellerId || '',
+        sellerName: getSellerName(product.sellerId),
+        livingCommunity: product.livingCommunity || '',
+        autoSelectId: product.id,
+        initialMode: 'selection',
+      },
+    });
+  };
 
   const handleSubmit = () => {
     if (!offerPrice) return;
     
-    const bundleItems = allAvailableProducts.filter(p => selectedProductIds.includes(p.id));
-    
     onSubmit({
-      items: bundleItems,
+      items: selectedItems,
       totalOfferAmount: parseFloat(offerPrice),
       message,
     });
@@ -105,6 +119,24 @@ export default function MakeOfferModal({
   };
 
   if (!product) return null;
+
+  // Determine context
+  const isBundleFlow = initialSelectedIds && initialSelectedIds.length > 0;
+
+  // Check if we should show the bundle promo
+  // Show if:
+  // 1. Not in bundle flow (opened from Product Detail)
+  // 2. The seller has other listings available (that are not already selected)
+  const showBundlePromo = useMemo(() => {
+    if (isBundleFlow) return false;
+
+    // Combine all potential items
+    const allItems = [product, ...sellerListings];
+    const uniqueAllIds = new Set(allItems.map(item => item.id));
+    
+    // If total unique items > selected items (which is 1), then there are others
+    return uniqueAllIds.size > 1;
+  }, [isBundleFlow, product, sellerListings]);
 
   return (
     <Modal
@@ -128,11 +160,9 @@ export default function MakeOfferModal({
             </View>
 
             <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-              {/* Main Product & Bundle Selection */}
+              {/* Selected Items List */}
               <Text style={styles.sectionTitle}>
-                {sellerListings.length > 0 
-                  ? "Select items to bundle (optional)" 
-                  : "Item"}
+                {selectedItems.length > 1 ? 'Items in this bundle' : 'Item'}
               </Text>
               
               <ScrollView 
@@ -140,20 +170,16 @@ export default function MakeOfferModal({
                 showsHorizontalScrollIndicator={false} 
                 contentContainerStyle={styles.listingsScroll}
               >
-                {allAvailableProducts.map((item) => {
-                  const isSelected = selectedProductIds.includes(item.id);
-                  const isMain = item.id === product.id;
+                {selectedItems.map((item) => {
                   const imageSource = item.images && item.images.length > 0 
                     ? (typeof item.images[0] === 'string' ? { uri: item.images[0] } : item.images[0])
                     : null;
 
                   return (
-                    <View key={item.id} style={[styles.productCardWrapper, isSelected && styles.productCardSelectedWrapper]}>
+                    <View key={item.id} style={[styles.productCardWrapper, styles.productCardReadOnly]}>
                       <TouchableOpacity
                         style={styles.productCardContent}
-                        onPress={() => toggleSelection(item.id)}
-                        activeOpacity={0.8}
-                        disabled={isMain} // Disable toggling off the main item
+                        activeOpacity={1}
                       >
                         <View style={styles.imageContainer}>
                           {imageSource ? (
@@ -163,23 +189,6 @@ export default function MakeOfferModal({
                               <Ionicons name="image-outline" size={24} color={theme.textSecondary} />
                             </View>
                           )}
-                          {isSelected && (
-                            <View style={styles.checkmarkContainer}>
-                              <Ionicons name="checkmark-circle" size={24} color={ASU.maroon} />
-                            </View>
-                          )}
-                          
-                          {/* Quick View Button */}
-                          <TouchableOpacity 
-                            style={styles.quickViewButton}
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              setPreviewProduct(item);
-                            }}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                          >
-                            <Ionicons name="eye" size={16} color="#fff" />
-                          </TouchableOpacity>
                         </View>
                         <View style={styles.productInfo}>
                           <Text style={styles.productTitle} numberOfLines={1}>{item.title}</Text>
@@ -191,17 +200,39 @@ export default function MakeOfferModal({
                 })}
               </ScrollView>
 
-              {/* Summary */}
-              <View style={styles.summaryContainer}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Selected Items:</Text>
-                  <Text style={styles.summaryValue}>{selectedProductIds.length}</Text>
+              {/* Bundle & Save Promo */}
+              {showBundlePromo && (
+                <TouchableOpacity 
+                  style={styles.bundlePromo} 
+                  onPress={handleBundlePromoPress}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.bundleIconCircle}>
+                    <Ionicons name="layers" size={24} color={ASU.maroon} />
+                  </View>
+                  <View style={styles.bundlePromoText}>
+                    <Text style={styles.bundlePromoTitle}>Bundle & Save</Text>
+                    <Text style={styles.bundlePromoSubtitle}>
+                      Shop {sellerListings.length} other items from {getSellerName(product.sellerId)} to save.
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                </TouchableOpacity>
+              )}
+
+              {/* Summary - Only show if from Seller Profile (Bundle Flow) */}
+              {isBundleFlow && (
+                <View style={styles.summaryContainer}>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Selected Items:</Text>
+                    <Text style={styles.summaryValue}>{selectedProductIds.length}</Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Total Listing Price:</Text>
+                    <Text style={styles.summaryValue}>${totalListingPrice}</Text>
+                  </View>
                 </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Total Listing Price:</Text>
-                  <Text style={styles.summaryValue}>${totalListingPrice}</Text>
-                </View>
-              </View>
+              )}
 
               {/* Offer Input */}
               <View style={styles.inputSection}>
@@ -326,29 +357,16 @@ const getStyles = (theme, insets) => StyleSheet.create({
     width: 150,
     marginRight: 12,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: 1,
+    borderColor: theme.border,
     overflow: 'hidden',
     backgroundColor: theme.background,
   },
-  productCardSelectedWrapper: {
-    borderColor: ASU.maroon,
-    backgroundColor: theme.surface,
+  productCardReadOnly: {
+    opacity: 0.9,
   },
   productCardContent: {
     padding: 8,
-  },
-  quickViewButton: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 14,
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
   },
   imageContainer: {
     width: '100%',
@@ -369,13 +387,6 @@ const getStyles = (theme, insets) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.border,
   },
-  checkmarkContainer: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: 'white',
-    borderRadius: 12,
-  },
   productInfo: {
     gap: 2,
   },
@@ -388,6 +399,40 @@ const getStyles = (theme, insets) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: theme.text,
+  },
+  bundlePromo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.surfaceHighlight || '#F9F9F9',
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: ASU.gold,
+    marginBottom: 24,
+  },
+  bundleIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: `${ASU.gold}20`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  bundlePromoText: {
+    flex: 1,
+  },
+  bundlePromoTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: ASU.maroon,
+    marginBottom: 2,
+  },
+  bundlePromoSubtitle: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    lineHeight: 16,
   },
   summaryContainer: {
     backgroundColor: theme.background,

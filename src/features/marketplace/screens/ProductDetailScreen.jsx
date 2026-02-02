@@ -313,7 +313,7 @@ export default function ProductDetailScreen() {
             }}
           />
           {/* Bundle & Save Promo */}
-          {allSellerListings.length > 0 && (
+          {/* {allSellerListings.length > 0 && (
             <TouchableOpacity
               style={styles.bundlePromo}
               onPress={() => {
@@ -341,7 +341,7 @@ export default function ProductDetailScreen() {
               </View>
               <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
-          )}
+          )} */}
         </View>
       </ScrollView>
 
