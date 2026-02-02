@@ -73,13 +73,6 @@ export default function ProductTileSkeleton({ style }) {
               { opacity: shimmerOpacity },
             ]}
           />
-          <Animated.View
-            style={[
-              styles.shimmer,
-              styles.metaChip2,
-              { opacity: shimmerOpacity },
-            ]}
-          />
         </View>
 
         {/* Footer Skeleton */}
@@ -159,11 +152,6 @@ const getStyles = (theme) => StyleSheet.create({
   metaChip: {
     height: 14,
     width: 60,
-    borderRadius: 4,
-  },
-  metaChip2: {
-    height: 14,
-    width: 80,
     borderRadius: 4,
   },
   footerContainer: {

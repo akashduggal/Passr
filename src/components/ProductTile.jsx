@@ -93,7 +93,6 @@ export default function ProductTile({ product, style }) {
         </Text>
         <View style={styles.productMeta}>
           <Text style={styles.productCondition}>{product.condition}</Text>
-          <Text style={styles.productLocation}>• {product.location || product.livingCommunity || ''}</Text>
         </View>
         <View style={styles.productFooter}>
           <Text style={styles.productPrice}>${product.price}</Text>
@@ -162,10 +161,6 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 12,
     color: theme.textSecondary,
     fontWeight: '500',
-  },
-  productLocation: {
-    fontSize: 12,
-    color: theme.textSecondary,
   },
   productFooter: {
     flexDirection: 'row',
