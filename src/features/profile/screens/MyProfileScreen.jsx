@@ -32,7 +32,7 @@ export default function MyProfileScreen() {
       <ScrollView 
         style={styles.content} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: 16 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 16 }]}
       >
         {/* Profile Card */}
         <View style={styles.profileCard}>

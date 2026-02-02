@@ -8,6 +8,7 @@ import {
   Image,
   FlatList,
   Modal,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -314,7 +315,7 @@ export default function MyOffersScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.filterContainer}>
+      <View style={[styles.filterContainer, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 16 }]}>
         {['All', 'Single', 'Bundle'].map(filter => renderFilterTab(filter))}
       </View>
 

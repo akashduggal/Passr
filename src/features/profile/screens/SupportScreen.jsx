@@ -137,7 +137,7 @@ export default function SupportScreen() {
       >
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight + 16 }]}
           showsVerticalScrollIndicator={false}
         >
           {/* Header Section */}

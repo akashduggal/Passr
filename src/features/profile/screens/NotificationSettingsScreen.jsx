@@ -28,7 +28,7 @@ export default function NotificationSettingsScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 16 }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.sectionTitle}>Notification Preferences</Text>
