@@ -71,8 +71,7 @@ export default function ListingOffersScreen() {
   const [selectedStatus, setSelectedStatus] = useState('pending'); // 'accepted' | 'pending' | 'rejected'
   const styles = getStyles(theme);
 
-  const handleAcceptOffer = (offer) => {
-    // TODO: Implement accept offer logic
+  const handleAcceptOffer = (offer) => {// TODO: Implement accept offer logic
     console.log('Accept offer:', offer.id);
   };
 
@@ -108,7 +107,13 @@ export default function ListingOffersScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {listing?.title || 'Listing Offers'}
+        </Text>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

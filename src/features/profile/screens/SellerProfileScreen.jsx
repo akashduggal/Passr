@@ -153,7 +153,7 @@ export default function SellerProfileScreen() {
   }, [selectedIds, sellerListings]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Stack.Screen options={{ title: `${sellerName}'s More Listings` }} />
       <ScrollView
         style={styles.scrollView}

@@ -1,5 +1,11 @@
-import MessagesListScreen from '../../src/features/chat/screens/MessagesListScreen';
+import { Stack } from 'expo-router';
+import MessagesScreen from '../../src/features/profile/screens/MessagesScreen';
 
 export default function MessagesRoute() {
-  return <MessagesListScreen />;
+  return (
+    <>
+      <Stack.Screen options={{ title: 'Messages' }} />
+      <MessagesScreen />
+    </>
+  );
 }

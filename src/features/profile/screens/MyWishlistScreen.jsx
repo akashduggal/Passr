@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { useWishlist } from '../../../context/WishlistContext';
@@ -15,7 +16,7 @@ export default function MyWishlistScreen() {
   
   if (wishlistItems.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
+      <SafeAreaView style={styles.emptyContainer} edges={['top', 'bottom']}>
         <View style={styles.iconCircle}>
           <Ionicons name="heart-outline" size={64} color={theme.textSecondary} />
         </View>
@@ -29,12 +30,12 @@ export default function MyWishlistScreen() {
         >
           <Text style={styles.browseButtonText}>Browse Marketplace</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.productsGrid}>
           {wishlistItems.map((item) => (
@@ -42,7 +43,7 @@ export default function MyWishlistScreen() {
           ))}
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

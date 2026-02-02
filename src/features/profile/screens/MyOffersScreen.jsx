@@ -159,6 +159,12 @@ export default function MyOffersScreen() {
   const handleOfferPress = (offer) => {
     if (offer.type === 'bundle') {
       handleBundlePress(offer);
+    } else if (offer.type === 'single' && offer.items.length > 0) {
+      const product = offer.items[0];
+      router.push({
+        pathname: '/product-detail',
+        params: { product: JSON.stringify(product) }
+      });
     }
   };
 
@@ -307,7 +313,7 @@ export default function MyOffersScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.filterContainer}>
         {['All', 'Single', 'Bundle'].map(filter => renderFilterTab(filter))}
       </View>

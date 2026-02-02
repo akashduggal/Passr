@@ -120,52 +120,33 @@ export default function SupportScreen() {
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme);
 
-  const [newIssueModalVisible, setNewIssueModalVisible] = useState(false);
-  const [selectedIssueType, setSelectedIssueType] = useState(ISSUE_TYPES[0]);
-  const [subject, setSubject] = useState('');
-  const [details, setDetails] = useState('');
-
-  const openNewIssueModal = () => setNewIssueModalVisible(true);
-  const closeNewIssueModal = () => {
-    setNewIssueModalVisible(false);
-    setSubject('');
-    setDetails('');
-    setSelectedIssueType(ISSUE_TYPES[0]);
-  };
-
-  const handleSubmit = () => {
-    if (!subject.trim() || !details.trim()) {
-      Alert.alert('Missing information', 'Please add a short subject and description.');
-      return;
+  // Filter issues based on active tab
+  const filteredIssues = raisedIssues.filter((issue) => {
+    if (activeTab === 'open') {
+      return issue.status === 'Open' || issue.status === 'In progress';
+    } else {
+      return issue.status === 'Resolved';
     }
-    Alert.alert('Support request sent', 'We will get back to you soon.');
-    closeNewIssueModal();
-  };
+  });
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <View style={[styles.stickyHeader, { paddingTop: topPadding }]}>
-        <View style={styles.headerCard}>
-          <View style={styles.headerTitleRow}>
-            <Ionicons name="headset-outline" size={36} color={ASU.maroon} />
-            <Text style={styles.title}>Support</Text>
-          </View>
-          <Text style={styles.subtitle}>
-            Get help with your Passr account, listings, offers, and pickups.
-          </Text>
-        </View>
-        <View style={styles.raisedTicketsHeader}>
-          <Ionicons name="receipt-outline" size={22} color={ASU.maroon} />
-          <Text style={[styles.raisedTicketsTitle, { color: theme.text }]}>Raised Tickets</Text>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.listScroll}
-        contentContainerStyle={[styles.listScrollContent, { paddingBottom: 88 }]}
-        showsVerticalScrollIndicator={true}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
       >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Section */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Help & Support</Text>
+            <Text style={styles.subtitle}>
+              Have an issue? Create a ticket and we will help you resolve it.
+            </Text>
+          </View>
         <View style={styles.section}>
           {MOCK_RAISED_ISSUES.length === 0 ? (
             <View style={styles.emptyState}>
@@ -299,6 +280,7 @@ export default function SupportScreen() {
           </KeyboardAvoidingView>
         </Pressable>
       </Modal>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
