@@ -66,10 +66,12 @@ export default function SellerProfileScreen() {
   const sellerId = params.sellerId || '';
   const sellerName = params.sellerName || 'ASU Student';
   const livingCommunity = params.livingCommunity || '';
+  const autoSelectId = params.autoSelectId ? parseInt(params.autoSelectId, 10) : null;
+  const initialMode = params.initialMode === 'selection';
 
   // Selection State
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(initialMode);
+  const [selectedIds, setSelectedIds] = useState(autoSelectId ? [autoSelectId] : []);
   const [offerModalVisible, setOfferModalVisible] = useState(false);
 
   // Get all listings by this seller: by sellerId when provided, else by livingCommunity

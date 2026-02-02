@@ -312,6 +312,36 @@ export default function ProductDetailScreen() {
               });
             }}
           />
+          {/* Bundle & Save Promo */}
+          {allSellerListings.length > 0 && (
+            <TouchableOpacity
+              style={styles.bundlePromo}
+              onPress={() => {
+                router.push({
+                  pathname: '/seller-profile',
+                  params: {
+                    sellerId: sellerId || '',
+                    sellerName,
+                    livingCommunity: livingCommunity || '',
+                    autoSelectId: product.id,
+                    initialMode: 'selection',
+                  },
+                });
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.bundleIconCircle}>
+                <Ionicons name="layers" size={24} color={ASU.maroon} />
+              </View>
+              <View style={styles.bundlePromoContent}>
+                <Text style={styles.bundleTitle}>Bundle & Save</Text>
+                <Text style={styles.bundleSubtitle}>
+                  Shop {allSellerListings.length} other items from {sellerName} to save.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 
@@ -319,14 +349,24 @@ export default function ProductDetailScreen() {
       {(showMakeOffer || showWishlist) && (
         <View style={styles.actions}>
           {showMakeOffer && (
-            <TouchableOpacity
-              style={styles.messageButton}
-              onPress={() => setOfferModalVisible(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chatbubble-outline" size={20} color={ASU.white} />
-              <Text style={styles.messageButtonText}>Make Offer</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.buyButton}
+                onPress={() => router.push({ pathname: '/checkout', params: { product: JSON.stringify(product) } })}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="cart-outline" size={20} color={ASU.black} />
+                <Text style={styles.buyButtonText}>Buy Now</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.messageButton}
+                onPress={() => setOfferModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="chatbubble-outline" size={20} color={ASU.white} />
+                <Text style={styles.messageButtonText}>Make Offer</Text>
+              </TouchableOpacity>
+            </>
           )}
           {showWishlist && (
             <TouchableOpacity
@@ -535,6 +575,40 @@ const getStyles = (theme) => StyleSheet.create({
   horizontalTile: {
     width: 160,
   },
+  bundlePromo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.surfaceHighlight || '#F9F9F9',
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: ASU.gold,
+  },
+  bundleIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: `${ASU.gold}20`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  bundlePromoContent: {
+    flex: 1,
+    marginRight: 8,
+  },
+  bundleTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.text,
+    marginBottom: 2,
+  },
+  bundleSubtitle: {
+    fontSize: 13,
+    color: theme.textSecondary,
+    lineHeight: 18,
+  },
   actions: {
     position: 'absolute',
     bottom: 0,
@@ -548,6 +622,21 @@ const getStyles = (theme) => StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.border,
     gap: 12,
+  },
+  buyButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: ASU.gold,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  buyButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: ASU.black,
   },
   messageButton: {
     flex: 1,
