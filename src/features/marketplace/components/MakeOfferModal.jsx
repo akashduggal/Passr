@@ -76,6 +76,11 @@ export default function MakeOfferModal({
       .reduce((sum, p) => sum + (p.price || 0), 0);
   }, [allAvailableProducts, selectedProductIds]);
 
+  // Update offer price when selection changes
+  useEffect(() => {
+    setOfferPrice(totalListingPrice > 0 ? totalListingPrice.toString() : '');
+  }, [totalListingPrice]);
+
   const handleSubmit = () => {
     if (!offerPrice) return;
     
