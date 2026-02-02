@@ -623,21 +623,6 @@ const getStyles = (theme) => StyleSheet.create({
     borderTopColor: theme.border,
     gap: 12,
   },
-  buyButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: ASU.gold,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-  },
-  buyButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: ASU.black,
-  },
   messageButton: {
     flex: 1,
     flexDirection: 'row',
