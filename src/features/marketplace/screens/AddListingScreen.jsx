@@ -301,6 +301,13 @@ export default function AddListingScreen({ isTab = false }) {
               setDescription('');
               setPrice('');
               setImages([]);
+              setSelectedCategory(null);
+              setSelectedBrand(null);
+              setSelectedCondition(null);
+              setSelectedCommunity(null);
+              setIsUrgent(false);
+              setEventDate('');
+              setVenue('');
               router.push('/dashboard');
             },
           },
