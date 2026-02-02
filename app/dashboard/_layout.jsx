@@ -75,6 +75,12 @@ function HeaderRight() {
 export default function DashboardLayout() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
+  const [user, setUser] = useState(auth().currentUser);
+
+  useEffect(() => {
+    const subscriber = auth().onAuthStateChanged(setUser);
+    return subscriber;
+  }, []);
   
   return (
     <Tabs
@@ -116,12 +122,12 @@ export default function DashboardLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarLabel: 'Profile',
+          title: user?.displayName || 'Profile',
+          tabBarLabel: '',
           headerShown: true,
           headerTransparent: true,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size ?? 24} color={color} />
+            <Ionicons name="menu-outline" size={size ?? 24} color={color} />
           ),
         }}
       />

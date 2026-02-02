@@ -242,13 +242,14 @@ export default function UserProfileScreen({ isTab = false }) {
             <Text style={[styles.navText, { color: ASU.maroon, fontWeight: '600' }]}>Log Out</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
 
-      {/* App name & version footer - sticky at bottom */}
-      <View style={[styles.appFooter, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <Text style={styles.appFooterName}>{appName}</Text>
-        <Text style={styles.appFooterVersion}>Version {appVersion}</Text>
-      </View>
+        {/* App name & version footer - sticky at bottom */}
+        <View style={[styles.appFooter, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <Text style={styles.appFooterName}>{appName}</Text>
+          <Text style={styles.appFooterVersion}>Version {appVersion}</Text>
+        </View>
+
+      </ScrollView>
     </View>
   );
 }
