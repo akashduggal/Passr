@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import auth from '@react-native-firebase/auth';
@@ -126,6 +127,22 @@ export default function LoginScreen() {
           <Text style={styles.termsText}>
             By signing in, you agree to our Terms of Service and Privacy Policy.
           </Text>
+
+          {/* Dev/Expo Go Bypass */}
+          {(__DEV__ || Constants.appOwnership === 'expo') && (
+            <TouchableOpacity
+              style={[styles.googleButton, { backgroundColor: isDarkMode ? ASU.gray2 : ASU.gray6 }]}
+              onPress={() => {
+                 auth().signInAnonymously()
+                   .then(() => router.replace('/dashboard'))
+                   .catch(() => router.replace('/dashboard'));
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="code-slash-outline" size={24} color={theme.text} />
+              <Text style={styles.googleButtonText}>Dev Login (Bypass Auth)</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
