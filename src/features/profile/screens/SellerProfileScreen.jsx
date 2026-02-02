@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -157,7 +158,11 @@ export default function SellerProfileScreen() {
       <Stack.Screen options={{ title: `${sellerName}'s More Listings` }} />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, isSelectionMode && { paddingBottom: 100 }]}
+        contentContainerStyle={[
+          styles.scrollContent, 
+          { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 20 },
+          isSelectionMode && { paddingBottom: 100 }
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Listings Section */}

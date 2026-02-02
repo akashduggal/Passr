@@ -116,7 +116,7 @@ export default function ListingOffersScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 20 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Listing Info */}
