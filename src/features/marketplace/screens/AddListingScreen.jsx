@@ -324,7 +324,10 @@ export default function AddListingScreen({ isTab = false }) {
     <View style={styles.container}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + headerHeight + 8 }]}
+        contentContainerStyle={[
+          styles.scrollContent, 
+          isTab && { paddingTop: insets.top + headerHeight + 8 }
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
