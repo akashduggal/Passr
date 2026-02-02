@@ -109,8 +109,7 @@ export default function Layout() {
             <Stack.Screen
               name="chat"
               options={{
-                title: 'Chat',
-                headerBackTitleVisible: false,
+                headerShown: false,
               }}
             />
           </Stack>

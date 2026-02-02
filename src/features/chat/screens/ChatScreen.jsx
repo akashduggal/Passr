@@ -60,14 +60,52 @@ export default function ChatScreen() {
   const isSeller = params.isSeller === 'true';
   const buyerName = params.buyerName || 'Buyer';
   const listingId = params.listingId || '';
-  const offerAmount = params.offerAmount ? parseFloat(params.offerAmount) : 0;
-  const productTitle = params.productTitle || 'Product';
-  const productPrice = params.productPrice ? parseFloat(params.productPrice) : 0;
+  
+  // Parse offer data if available
+  const offerData = params.offerData ? JSON.parse(params.offerData) : null;
+  const isBundle = offerData && offerData.items && offerData.items.length > 1;
+
+  const productTitle = isBundle 
+    ? `Bundle Offer (${offerData.items.length} items)`
+    : (offerData ? offerData.items[0].title : (params.productTitle || 'Product'));
+    
+  const productPrice = isBundle
+    ? offerData.items.reduce((sum, item) => sum + (item.price || 0), 0)
+    : (offerData ? offerData.items[0].price : (params.productPrice ? parseFloat(params.productPrice) : 0));
+
+  const offerAmount = offerData 
+    ? offerData.totalOfferAmount 
+    : (params.offerAmount ? parseFloat(params.offerAmount) : 0);
+    
   const offerAcceptedFromParams = params.offerAccepted === 'true';
 
   const [offerAccepted, setOfferAccepted] = useState(offerAcceptedFromParams || false);
   const [isOnline] = useState(true);
   const [messages, setMessages] = useState(() => {
+    // Generate initial message based on offer data
+    if (offerData) {
+      let text = '';
+      if (isBundle) {
+        const itemList = offerData.items.map(item => `• ${item.title} ($${item.price})`).join('\n');
+        text = `Hi! I'm interested in purchasing a bundle of the following items from your listings:\n\n${itemList}\n\nI'd like to offer a total of $${offerAmount.toFixed(0)} for this bundle.`;
+      } else {
+        const item = offerData.items[0];
+        text = `Hi! I'm interested in your ${item.title}. I'd like to make an offer of $${offerAmount.toFixed(0)}.`;
+      }
+
+      if (offerData.message && offerData.message.trim()) {
+        text += `\n\n${offerData.message.trim()}`;
+      }
+
+      return [{
+        id: 1,
+        text,
+        sender: 'buyer', // Current user is the buyer initiating the offer
+        timestamp: new Date(),
+      }];
+    }
+
+    // Fallback for existing flows (non-bundle)
     const initial = [
       {
         id: 1,

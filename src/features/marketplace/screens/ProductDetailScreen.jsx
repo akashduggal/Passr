@@ -123,15 +123,7 @@ export default function ProductDetailScreen() {
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
-        {/* Bundle Offer Modal */}
-      <MakeOfferModal
-        visible={offerModalVisible}
-        onClose={() => setOfferModalVisible(false)}
-        product={product}
-        sellerListings={allSellerListings}
-        onSubmit={handleOfferSubmit}
-      />
-    </SafeAreaView>
+      </SafeAreaView>
     );
   }
 
