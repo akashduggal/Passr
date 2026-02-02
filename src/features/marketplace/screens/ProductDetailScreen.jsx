@@ -353,6 +353,50 @@ export default function ProductDetailScreen() {
         sellerListings={allSellerListings}
         onSubmit={handleOfferSubmit}
       />
+
+      {/* Full Screen Image Viewer Modal */}
+      <Modal
+        visible={fullScreenImageIndex !== null}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeFullScreenImage}
+      >
+        <View style={styles.fullScreenContainer}>
+          <TouchableOpacity
+            style={[styles.fullScreenCloseButton, { top: insets.top + 10 }]}
+            onPress={closeFullScreenImage}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="close" size={30} color="#fff" />
+          </TouchableOpacity>
+          
+          <PagerView
+            style={styles.fullScreenPager}
+            initialPage={fullScreenImageIndex || 0}
+            onPageSelected={(e) => setFullScreenViewedIndex(e.nativeEvent.position)}
+          >
+            {imageSlots.map((slot, index) => {
+              const uri = getDetailUri(slot);
+              if (!uri) return null;
+              return (
+                <View key={index} style={styles.fullScreenImageContainer}>
+                  <Image
+                    source={{ uri }}
+                    style={styles.fullScreenImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              );
+            })}
+          </PagerView>
+          
+          <View style={[styles.fullScreenPagination, { bottom: insets.bottom + 20 }]}>
+            <Text style={styles.fullScreenPaginationText}>
+              {fullScreenViewedIndex + 1} / {imageSlots.length}
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -609,5 +653,43 @@ const getStyles = (theme) => StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.border,
+  },
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+  },
+  fullScreenCloseButton: {
+    position: 'absolute',
+    right: 20,
+    zIndex: 10,
+    padding: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+  },
+  fullScreenPager: {
+    flex: 1,
+  },
+  fullScreenImageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: screenWidth,
+    height: '100%',
+  },
+  fullScreenPagination: {
+    position: 'absolute',
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  fullScreenPaginationText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
