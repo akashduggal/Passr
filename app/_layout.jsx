@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useRootNavigationState } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import { FilterProvider } from '../src/context/FilterContext';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { WishlistProvider } from '../src/context/WishlistContext';
@@ -11,10 +12,83 @@ import AppSplashScreen from '../src/components/AppSplashScreen';
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
+function useNotificationObserver() {
+  const router = useRouter();
+  const navigationState = useRootNavigationState();
+
+  useEffect(() => {
+    // Wait for the navigation to be ready
+    if (!navigationState?.key) return;
+
+    let isMounted = true;
+
+    function redirect(notification) {
+      console.log("Triggered REDIRECT")
+      const data = notification.request.content.data.data;
+      let url = data?.url;
+      console.log(JSON.stringify(data))
+      console.log("URL RECEIVED :: ", url)
+      if (url) {
+        // Normalize URL: strip scheme if present (e.g. passr:// -> /)
+        if (url.includes('://')) {
+          const pathIndex = url.indexOf('://') + 3;
+          url = url.substring(url.indexOf('/', pathIndex)); // Get path after scheme
+        }
+        
+        // Ensure path starts with /
+        if (!url.startsWith('/')) {
+          url = '/' + url;
+        }
+        console.log("URL :: ", url)
+        // Small delay to ensure navigation stack is ready on Android
+        setTimeout(() => {
+          router.push(url);
+        }, 100);
+      } else {
+        // Fallback for custom logic (e.g. your offer type)
+        if (data.type === 'offer' && data.listingId) {
+          setTimeout(() => {
+            router.push({
+              pathname: '/profile/listing-offers',
+              params: {
+                listing: JSON.stringify({
+                  id: data.listingId,
+                  title: data.listingTitle || 'Listing',
+                  price: data.productPrice ?? 0,
+                  sold: false,
+                }),
+              },
+            });
+          }, 100);
+        }
+      }
+    }
+
+    Notifications.getLastNotificationResponseAsync()
+      .then(response => {
+        if (!isMounted || !response?.notification) {
+          return;
+        }
+        redirect(response.notification);
+      });
+
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      redirect(response.notification);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.remove();
+    };
+  }, [router, navigationState?.key]);
+}
+
 export default function Layout() {
   const [isAppReady, setIsAppReady] = useState(false);
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  
+  useNotificationObserver();
 
   useEffect(() => {
     const prepare = async () => {

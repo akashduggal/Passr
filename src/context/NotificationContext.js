@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { useRouter } from 'expo-router';
 import { notificationService } from '../services/NotificationService';
 import { registerForPushNotificationsAsync, addNotificationListeners } from '../services/PushNotificationService';
 import userService from '../services/UserService';
@@ -65,15 +66,33 @@ export const NotificationProvider = ({ children }) => {
 
       // Add listeners
       removeListeners = addNotificationListeners(
-        (notification) => {
+        async (notification) => {
           console.log('Push Notification Received:', notification);
-          // Refresh in-app notifications if needed
-          fetchNotifications();
+          
+          try {
+            const content = notification.request.content;
+            const data = content.data || {};
+            
+            const newNotification = {
+              id: data.id || Date.now().toString(),
+              type: data.type || 'message',
+              title: content.title,
+              body: content.body,
+              createdAt: new Date().toISOString(),
+              read: false,
+              ...data
+            };
+
+            // Add to service
+            await notificationService.addNotification(newNotification);
+            
+            // Refresh in-app notifications
+            fetchNotifications();
+          } catch (error) {
+            console.error('Error processing push notification:', error);
+          }
         },
-        (response) => {
-          console.log('Push Notification Response:', response);
-          // Handle navigation if needed
-        }
+        null // We handle responses via useLastNotificationResponse hook
       );
     }
 
