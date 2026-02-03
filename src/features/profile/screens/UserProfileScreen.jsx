@@ -12,6 +12,8 @@ import { useRouter, useNavigation } from 'expo-router';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState, useEffect } from 'react';
 import auth from '../../../services/firebaseAuth';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
@@ -25,6 +27,33 @@ export default function UserProfileScreen({ isTab = false }) {
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const value = await AsyncStorage.getItem('alwaysShowOnboarding');
+      // Default to true for mocking as per request, but only if not set?
+      // User request: "show onboarding screen by default"
+      // So if value is null, maybe treat as true?
+      // But for the toggle state, we just read what is there.
+      setShowOnboarding(value === 'true');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const toggleOnboarding = async (value) => {
+    try {
+      setShowOnboarding(value);
+      await AsyncStorage.setItem('alwaysShowOnboarding', String(value));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const featureCards = [
     {
@@ -170,6 +199,31 @@ export default function UserProfileScreen({ isTab = false }) {
         </View>
 
         {/* App name & version footer - sticky at bottom */}
+        <View style={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+          <View style={{ 
+            flexDirection: 'row', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            backgroundColor: theme.surface,
+            padding: 16,
+            borderRadius: 12,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: theme.border
+          }}>
+            <View>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text }}>Show Onboarding</Text>
+              <Text style={{ fontSize: 12, color: theme.textSecondary }}>Show on next app launch</Text>
+            </View>
+            <Switch
+              value={showOnboarding}
+              onValueChange={toggleOnboarding}
+              trackColor={{ false: theme.gray6, true: ASU.maroon }}
+              thumbColor={ASU.white}
+            />
+          </View>
+        </View>
+
         <View style={[styles.appFooter, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <Text style={styles.appFooterName}>{appName}</Text>
           <Text style={styles.appFooterVersion}>Version {appVersion}</Text>
