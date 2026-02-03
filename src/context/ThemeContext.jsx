@@ -12,35 +12,13 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  // Hardcoded to false for Light Mode enforcement
+  const isDarkMode = false;
+  const isLoading = false;
 
-  // Load theme preference from storage on mount
-  useEffect(() => {
-    const loadTheme = async () => {
-      try {
-        const savedTheme = await AsyncStorage.getItem('themeMode');
-        if (savedTheme !== null) {
-          setIsDarkMode(savedTheme === 'dark');
-        }
-      } catch (error) {
-        console.error('Error loading theme:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadTheme();
-  }, []);
-
-  // Save theme preference to storage
+  // No-op for toggle
   const toggleTheme = async () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    try {
-      await AsyncStorage.setItem('themeMode', newMode ? 'dark' : 'light');
-    } catch (error) {
-      console.error('Error saving theme:', error);
-    }
+    console.log('Dark mode is currently disabled');
   };
 
   return (

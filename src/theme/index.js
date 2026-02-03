@@ -42,24 +42,10 @@ export const lightTheme = {
   link: ASU.maroon,
 };
 
-/** Dark theme tokens for app UI. */
-export const darkTheme = {
-  background: ASU.gray1,
-  surface: ASU.gray2,
-  primary: ASU.maroon,
-  primaryText: ASU.white,
-  text: ASU.white,
-  textSecondary: ASU.gray4,
-  label: ASU.gray4,
-  border: ASU.gray2,
-  placeholder: ASU.gray,
-  link: ASU.gold,
-};
-
 /** Default theme (light) for backward compatibility */
 export const theme = lightTheme;
 
-/** Get theme based on dark mode */
+/** Get theme based on dark mode (Always returns light theme) */
 export const getTheme = (isDarkMode) => {
-  return isDarkMode ? darkTheme : lightTheme;
+  return lightTheme;
 };

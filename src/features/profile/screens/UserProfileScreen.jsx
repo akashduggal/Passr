@@ -23,7 +23,7 @@ export default function UserProfileScreen({ isTab = false }) {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
 
   const featureCards = [
@@ -79,13 +79,6 @@ export default function UserProfileScreen({ isTab = false }) {
     { id: 'privacy', title: 'Privacy and Data', icon: 'lock-closed-outline', route: null },
     { id: 'support', title: 'Support', icon: 'headset-outline', route: '/profile/support' },
   ];
-
-  // Dark mode toggle item
-  const darkModeItem = {
-    id: 'darkMode',
-    title: 'Dark Mode',
-    icon: isDarkMode ? 'moon' : 'moon-outline',
-  };
 
   const styles = getStyles(theme, insets, isTab);
   const hasSingleFeature = featureCards.length === 1;
@@ -174,24 +167,6 @@ export default function UserProfileScreen({ isTab = false }) {
               />
             </TouchableOpacity>
           ))}
-          
-          {/* Dark Mode Toggle */}
-          <View style={[styles.navItem, { borderBottomColor: theme.border }]}>
-            <Ionicons
-              name={darkModeItem.icon}
-              size={24}
-              color={theme.text}
-              style={styles.navIcon}
-            />
-            <Text style={[styles.navText, { color: theme.text }]}>{darkModeItem.title}</Text>
-            <Switch
-              value={isDarkMode}
-              onValueChange={toggleTheme}
-              trackColor={{ false: ASU.gray5, true: ASU.maroon + '80' }}
-              thumbColor={isDarkMode ? ASU.maroon : ASU.gray4}
-              ios_backgroundColor={ASU.gray5}
-            />
-          </View>
         </View>
 
         {/* App name & version footer - sticky at bottom */}
