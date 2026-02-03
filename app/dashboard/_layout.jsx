@@ -102,6 +102,7 @@ export default function DashboardLayout() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const [user, setUser] = useState(auth().currentUser);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const subscriber = auth().onAuthStateChanged(setUser);
