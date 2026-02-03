@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, ScrollView, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, Platform, TouchableOpacity, Alert, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import auth from '../../../services/firebaseAuth';
@@ -6,6 +6,7 @@ import { GoogleSignin } from '../../../services/googleSignin';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
+import { useState } from 'react';
 
 export default function MyProfileScreen() {
   const router = useRouter();
@@ -14,26 +15,30 @@ export default function MyProfileScreen() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const user = auth().currentUser;
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const styles = getStyles(theme, insets);
 
+  const confirmLogout = () => {
+    setShowLogoutModal(true);
+  };
+
   const handleLogout = async () => {
+    if (isLoggingOut) return;
+    
+    setIsLoggingOut(true);
     try {
       // Ensure Google Sign-In is configured
       GoogleSignin.configure({
         webClientId: '872459232362-fmrc9g7eiitgnps7i3uk6slau6ndhnkm.apps.googleusercontent.com',
       });
       
-      try {
-        await GoogleSignin.signOut();
-      } catch (e) {
-        // Ignore if Google Sign-In fails (e.g. not signed in)
-        console.log('Google sign out error:', e);
-      }
-
-      if (auth().currentUser) {
-        await auth().signOut();
-      }
+      // Perform sign out operations in parallel where possible
+      await Promise.all([
+        GoogleSignin.signOut().catch(e => console.log('Google sign out error:', e)),
+        auth().currentUser ? auth().signOut() : Promise.resolve()
+      ]);
       
       // Reset navigation stack to login screen
       navigation.reset({
@@ -42,11 +47,8 @@ export default function MyProfileScreen() {
       });
     } catch (error) {
       console.error('Error signing out: ', error);
-      // Fallback reset
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'login' }],
-      });
+      Alert.alert('Error', 'Failed to log out. Please try again.');
+      setIsLoggingOut(false);
     }
   };
 
@@ -124,17 +126,70 @@ export default function MyProfileScreen() {
           />
         </View>
 
-        {/* Logout Button */}
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="log-out-outline" size={20} color={ASU.white} />
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
+        {/* Logout Section */}
+        <View style={styles.logoutContainer}>
+          <TouchableOpacity
+            style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]}
+            onPress={confirmLogout}
+            activeOpacity={0.7}
+            disabled={isLoggingOut}
+          >
+            {isLoggingOut ? (
+              <ActivityIndicator size="small" color={ASU.maroon} />
+            ) : (
+              <>
+                <Ionicons name="log-out-outline" size={20} color={ASU.maroon} />
+                <Text style={styles.logoutText}>Log Out</Text>
+              </>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.versionText}>Version 1.0.0</Text>
+        </View>
 
       </ScrollView>
+
+      {/* Modern Logout Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showLogoutModal}
+        onRequestClose={() => setShowLogoutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowLogoutModal(false)}>
+            <View style={styles.modalBackdrop} />
+          </TouchableWithoutFeedback>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalIndicator} />
+            </View>
+            <Text style={styles.modalTitle}>Log Out</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to sign out of your account?</Text>
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={[styles.modalButtonCancel, isLoggingOut && { opacity: 0.5 }]}
+                onPress={() => setShowLogoutModal(false)}
+                disabled={isLoggingOut}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButtonConfirm, isLoggingOut && { opacity: 0.8 }]}
+                onPress={handleLogout}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.modalButtonConfirmText}>Log Out</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -288,19 +343,124 @@ const getStyles = (theme, insets) => StyleSheet.create({
     color: theme.text,
     fontWeight: '500',
   },
+  logoutContainer: {
+    marginTop: 8,
+    marginBottom: 40,
+    alignItems: 'center',
+  },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: ASU.maroon,
-    padding: 16,
-    borderRadius: 16,
+    backgroundColor: '#FCE4EC', // Very light maroon/pink
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 30, // Pill shape
     gap: 8,
-    marginBottom: 24,
+    width: '100%',
+    height: 56,
+    borderWidth: 1,
+    borderColor: 'rgba(140, 29, 64, 0.1)',
+  },
+  logoutButtonDisabled: {
+    opacity: 0.6,
   },
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: ASU.white,
+    color: ASU.maroon,
+    letterSpacing: 0.3,
+  },
+  versionText: {
+    marginTop: 16,
+    fontSize: 12,
+    color: theme.textSecondary,
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modalContent: {
+    backgroundColor: theme.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalIndicator: {
+    width: 40,
+    height: 4,
+    backgroundColor: theme.border,
+    borderRadius: 2,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.text,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: theme.textSecondary,
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  modalButtonCancel: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 30,
+    backgroundColor: theme.background,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  modalButtonCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  modalButtonConfirm: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 30,
+    backgroundColor: ASU.maroon,
+    alignItems: 'center',
+    shadowColor: ASU.maroon,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  modalButtonConfirmText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
