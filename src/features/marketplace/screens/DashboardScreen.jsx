@@ -8,6 +8,8 @@ import { getTheme, ASU } from '../../../theme';
 import { ENABLE_TICKETS } from '../../../constants/featureFlags';
 import ProductTile from '../../../components/ProductTile';
 import ProductTileSkeleton from '../../../components/ProductTileSkeleton';
+import CategoryChipSkeleton from '../../../components/CategoryChipSkeleton';
+import SortFilterSkeleton from '../../../components/SortFilterSkeleton';
 import { listingService } from '../../../services/ListingService';
 
 const SORT_OPTIONS = [
@@ -36,6 +38,8 @@ export default function DashboardScreen() {
   const fetchListings = useCallback(async (showLoader = true) => {
     if (showLoader) setIsLoading(true);
     try {
+      // Add artificial delay for mocking loading state
+      if (showLoader) await new Promise(resolve => setTimeout(resolve, 1500));
       const data = await listingService.getAllListings();
       setAllProducts(data);
     } catch (error) {
@@ -118,54 +122,65 @@ export default function DashboardScreen() {
           contentContainerStyle={styles.chipsContainer}
           style={styles.chipsScrollView}
         >
-        {categories.map((category, index) => {
-          const isSelected = selectedCategory === index;
-          return (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.chip,
-                isSelected && styles.chipSelected,
-              ]}
-              activeOpacity={0.7}
-              onPress={() => setSelectedCategory(index)}
-            >
-              <Text
+        {isLoading ? (
+          // Show 4 skeleton chips while loading
+          [...Array(4)].map((_, index) => (
+            <CategoryChipSkeleton key={`skeleton-${index}`} />
+          ))
+        ) : (
+          categories.map((category, index) => {
+            const isSelected = selectedCategory === index;
+            return (
+              <TouchableOpacity
+                key={index}
                 style={[
-                  styles.chipText,
-                  isSelected && styles.chipTextSelected,
+                  styles.chip,
+                  isSelected && styles.chipSelected,
                 ]}
+                activeOpacity={0.7}
+                onPress={() => setSelectedCategory(index)}
               >
-                {category}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+                <Text
+                  style={[
+                    styles.chipText,
+                    isSelected && styles.chipTextSelected,
+                  ]}
+                >
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            );
+          })
+        )}
         </ScrollView>
       </View>
-      <View style={styles.sortFilterBar}>
-        <TouchableOpacity
-          style={styles.sortDropdown}
-          onPress={() => setSortModalVisible(true)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.sortDropdownLabel}>Sort by</Text>
-          <View style={styles.sortDropdownValue}>
-            <Text style={styles.sortDropdownValueText} numberOfLines={1}>
-              {selectedSortLabel}
-            </Text>
-            <Ionicons name="chevron-down" size={18} color={theme.textSecondary} />
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => router.push('/filters')}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="filter" size={20} color={theme.text} />
-          <Text style={styles.filterButtonLabel}>Filter</Text>
-        </TouchableOpacity>
-      </View>
+      {isLoading ? (
+        <SortFilterSkeleton />
+      ) : (
+        <View style={styles.sortFilterBar}>
+          <TouchableOpacity
+            style={styles.sortDropdown}
+            onPress={() => setSortModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.sortDropdownLabel}>Sort by</Text>
+            <View style={styles.sortDropdownValue}>
+              <Text style={styles.sortDropdownValueText} numberOfLines={1}>
+                {selectedSortLabel}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color={theme.textSecondary} />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => router.push('/filters')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="filter" size={20} color={theme.text} />
+            <Text style={styles.filterButtonLabel}>Filter</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <ScrollView 
         style={styles.content}
         showsVerticalScrollIndicator={false}
