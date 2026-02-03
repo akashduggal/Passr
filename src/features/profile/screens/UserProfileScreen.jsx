@@ -76,7 +76,7 @@ export default function UserProfileScreen({ isTab = false }) {
 
   const navItems = [
     { id: 'notifications', title: 'Notification Settings', icon: 'notifications-outline', route: '/profile/notification-settings' },
-    { id: 'privacy', title: 'Privacy and Data', icon: 'lock-closed-outline', route: null },
+    { id: 'privacy', title: 'Privacy and Data', icon: 'lock-closed-outline', route: '/profile/privacy-data' },
     { id: 'support', title: 'Support', icon: 'headset-outline', route: '/profile/support' },
   ];
 
