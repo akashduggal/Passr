@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Image, Text } from 'react-native';
+import { View, TouchableOpacity, Image, Text, Platform } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import auth from '../../src/services/firebaseAuth';
@@ -116,9 +116,25 @@ export default function DashboardLayout() {
         headerTitleStyle: { color: theme.text, fontWeight: '600' },
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.textSecondary,
+        tabBarLabelStyle: {
+          fontWeight: '500',
+          fontSize: 12,
+          marginBottom: 4,
+        },
         tabBarStyle: {
           backgroundColor: theme.surface,
           borderTopColor: theme.border,
+          height: Platform.OS === 'ios' ? 85 : 60,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          shadowColor: "#000",
+          shadowOffset: {
+            width: 0,
+            height: -2,
+          },
+          shadowOpacity: 0.05,
+          shadowRadius: 4,
+          elevation: 5,
         },
       }}
     >
@@ -128,8 +144,12 @@ export default function DashboardLayout() {
           title: 'Passr',
           tabBarLabel: "",
           headerTransparent: true,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size ?? 24} color={color} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons 
+              name={focused ? "home" : "home-outline"} 
+              size={size} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -139,8 +159,12 @@ export default function DashboardLayout() {
           title: 'Listing',
           tabBarLabel: '',
           headerTransparent: true,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="add-outline" size={size ?? 24} color={color} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons 
+              name={focused ? "add-circle" : "add-circle-outline"} 
+              size={size + 4} 
+              color={color} 
+            />
           )
         }}
       />
@@ -151,8 +175,12 @@ export default function DashboardLayout() {
           tabBarLabel: '',
           headerShown: true,
           headerTransparent: true,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="menu-outline" size={size ?? 24} color={color} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons 
+              name={focused ? "person" : "person-outline"} 
+              size={size} 
+              color={color} 
+            />
           ),
         }}
       />
