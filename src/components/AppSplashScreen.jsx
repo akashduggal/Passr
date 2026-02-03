@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, Animated, Image } from 'react-native';
 import { ASU } from '../theme';
 
 export default function AppSplashScreen() {
@@ -35,7 +34,11 @@ export default function AppSplashScreen() {
             }
           ]}
         >
-          <Ionicons name="cart" size={64} color={ASU.white} />
+          <Image 
+            source={require('../../assets/Passr_logo.png')} 
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </Animated.View>
         
         <Animated.View style={{ opacity: fadeAnim }}>
@@ -72,6 +75,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
+  },
+  logoImage: {
+    width: 180,
+    height: 180,
   },
   appName: {
     fontSize: 56,

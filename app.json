@@ -22,8 +22,8 @@
     "android": {
       "package": "com.passr.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/Passr_logo.png",
+        "backgroundColor": "#0F766E33"
       },
       "edgeToEdgeEnabled": true,
       "googleServicesFile": "./google-services.json",

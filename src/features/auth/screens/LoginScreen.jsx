@@ -8,6 +8,7 @@ import {
   Dimensions,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -81,7 +82,10 @@ export default function LoginScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
-            <Ionicons name="cart" size={48} color={ASU.white} />
+            <Image 
+              source={require('../../../../assets/Passr_logo.png')} 
+              style={styles.logoImage}
+            />
           </View>
           <Text style={styles.appName}>Passr</Text>
           <Text style={styles.tagline}>The Marketplace for{'\n'}ASU Students</Text>
@@ -175,6 +179,11 @@ const getStyles = (theme, isDarkMode) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
+  },
+  logoImage: {
+    width: 180,
+    height: 180,
+    resizeMode: 'contain',
   },
   appName: {
     fontSize: 42,
