@@ -65,6 +65,11 @@ class NotificationService {
     });
   }
 
+  async addNotification(notification) {
+    this.notifications.unshift(notification);
+    return Promise.resolve(notification);
+  }
+
   async markAsRead(id) {
     return new Promise((resolve) => {
       setTimeout(() => {
