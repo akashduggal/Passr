@@ -39,11 +39,11 @@ export default function UserProfileScreen({ isTab = false }) {
     {
       id: 'faqs',
       title: 'FAQs',
-      description: 'Coming soon',
+      description: 'Frequently Asked Questions',
       icon: 'help-circle-outline',
       backgroundColor: ASU.gray6,
       iconColor: ASU.maroon,
-      route: null,
+      route: '/profile/faq',
     },
     // {
     //   id: 'messages',
