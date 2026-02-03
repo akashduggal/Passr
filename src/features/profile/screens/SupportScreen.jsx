@@ -118,16 +118,67 @@ export default function SupportScreen() {
   const topPadding = insets.top + 8;
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
-  const styles = getStyles(theme);
+  const [selectedIssueType, setSelectedIssueType] = useState('Listing issue');
+  const [newIssueModalVisible, setNewIssueModalVisible] = useState(false);
+  
+  // Form state
+  const [subject, setSubject] = useState('');
+  const [details, setDetails] = useState('');
+  
+  // Use MOCK_RAISED_ISSUES as initial state for issues to render
+  const [filteredIssues, setFilteredIssues] = useState(MOCK_RAISED_ISSUES);
 
-  // Filter issues based on active tab
-  const filteredIssues = raisedIssues.filter((issue) => {
-    if (activeTab === 'open') {
-      return issue.status === 'Open' || issue.status === 'In progress';
-    } else {
-      return issue.status === 'Resolved';
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('All'); // All, Open, Resolved
+
+  // Filter issues based on search and tab
+  const getVisibleIssues = () => {
+    return filteredIssues.filter(issue => {
+      const matchesSearch = 
+        issue.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        issue.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesTab = 
+        activeTab === 'All' ? true : 
+        activeTab === 'Open' ? (issue.status === 'Open' || issue.status === 'In progress') :
+        (issue.status === 'Resolved');
+
+      return matchesSearch && matchesTab;
+    });
+  };
+
+  const visibleIssues = getVisibleIssues();
+  
+  const styles = getStyles(theme, insets);
+
+  const openNewIssueModal = () => setNewIssueModalVisible(true);
+  const closeNewIssueModal = () => {
+    setNewIssueModalVisible(false);
+    // Reset form
+    setSubject('');
+    setDetails('');
+    setSelectedIssueType('Listing issue');
+  };
+
+  const handleSubmit = () => {
+    if (!subject.trim() || !details.trim()) {
+      Alert.alert('Missing fields', 'Please fill in both subject and description.');
+      return;
     }
-  });
+
+    const newIssue = {
+      id: Date.now().toString(),
+      subject: subject.trim(),
+      topic: selectedIssueType,
+      status: 'Open',
+      createdAt: new Date(),
+      description: details.trim(),
+    };
+
+    setFilteredIssues([newIssue, ...filteredIssues]);
+    closeNewIssueModal();
+    Alert.alert('Ticket Created', 'We have received your issue and will look into it shortly.');
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -144,42 +195,99 @@ export default function SupportScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>Help & Support</Text>
             <Text style={styles.subtitle}>
-              Have an issue? Create a ticket and we will help you resolve it.
+              Track your tickets and get help.
             </Text>
           </View>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <Ionicons name="search-outline" size={20} color={theme.textSecondary} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search issues..."
+              placeholderTextColor={theme.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+
+          {/* Filter Tabs */}
+          <View style={styles.tabsContainer}>
+            {['All', 'Open', 'Resolved'].map((tab) => (
+              <TouchableOpacity
+                key={tab}
+                style={[
+                  styles.tab, 
+                  activeTab === tab && styles.activeTab,
+                  { borderColor: activeTab === tab ? ASU.maroon : theme.border }
+                ]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[
+                  styles.tabText, 
+                  activeTab === tab && styles.activeTabText,
+                  { color: activeTab === tab ? ASU.maroon : theme.textSecondary }
+                ]}>
+                  {tab}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
         <View style={styles.section}>
-          {MOCK_RAISED_ISSUES.length === 0 ? (
+          {visibleIssues.length === 0 ? (
             <View style={styles.emptyState}>
-              <View style={[styles.emptyStateIconWrap, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                <Ionicons name="document-text-outline" size={48} color={theme.textSecondary} />
+              <View style={[styles.emptyStateIconWrap, { backgroundColor: theme.surface }]}>
+                <Ionicons name="search" size={48} color={theme.textSecondary} />
               </View>
-              <Text style={[styles.emptyStateTitle, { color: theme.text }]}>No raised issues</Text>
+              <Text style={[styles.emptyStateTitle, { color: theme.text }]}>No tickets found</Text>
               <Text style={[styles.emptyStateBody, { color: theme.textSecondary }]}>
-                When you report a problem, it will appear here. Tap the + button below to submit a new issue.
+                Try adjusting your search or create a new ticket.
               </Text>
             </View>
           ) : (
-            MOCK_RAISED_ISSUES.map((issue) => (
-              <View
+            visibleIssues.map((issue) => (
+              <TouchableOpacity
                 key={issue.id}
-                style={[styles.issueCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                activeOpacity={0.9}
+                style={[styles.issueCard, { backgroundColor: theme.surface }]}
               >
-                <View style={styles.issueCardHeader}>
-                  <Text style={[styles.issueSubject, { color: theme.text }]} numberOfLines={2}>
-                    {issue.subject}
-                  </Text>
-                  <View style={[styles.issueStatusBadge, issue.status === 'Resolved' && { backgroundColor: ASU.green + '20' }, issue.status === 'In progress' && { backgroundColor: ASU.gold + '20' }, issue.status === 'Open' && { backgroundColor: ASU.maroon + '20' }]}>
-                    <Text style={[styles.issueStatusText, issue.status === 'Resolved' && { color: ASU.green }, issue.status === 'In progress' && { color: ASU.gold }, issue.status === 'Open' && { color: ASU.maroon }]}>
+                <View style={styles.cardHeaderRow}>
+                  <View style={styles.cardTopicBadge}>
+                    <Text style={styles.cardTopicText}>{issue.topic}</Text>
+                  </View>
+                  <View style={[
+                    styles.statusPill, 
+                    issue.status === 'Resolved' && { backgroundColor: '#E8F5E9' },
+                    issue.status === 'In progress' && { backgroundColor: '#FFF8E1' },
+                    issue.status === 'Open' && { backgroundColor: '#FFEBEE' }
+                  ]}>
+                    <Text style={[
+                      styles.statusText,
+                      issue.status === 'Resolved' && { color: '#2E7D32' },
+                      issue.status === 'In progress' && { color: '#F57F17' },
+                      issue.status === 'Open' && { color: '#C62828' }
+                    ]}>
                       {issue.status}
                     </Text>
                   </View>
                 </View>
-                <Text style={[styles.issueTopic, { color: theme.textSecondary }]}>{issue.topic}</Text>
+                
+                <Text style={[styles.issueSubject, { color: theme.text }]} numberOfLines={1}>
+                  {issue.subject}
+                </Text>
+                
                 <Text style={[styles.issueDescription, { color: theme.textSecondary }]} numberOfLines={2}>
                   {issue.description}
                 </Text>
-                <Text style={[styles.issueDate, { color: theme.textSecondary }]}>{formatIssueDate(issue.createdAt)}</Text>
-              </View>
+                
+                <View style={styles.cardFooter}>
+                  <Text style={[styles.issueDate, { color: theme.textSecondary }]}>
+                    {formatIssueDate(issue.createdAt)}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                </View>
+              </TouchableOpacity>
             ))
           )}
         </View>
@@ -304,72 +412,168 @@ const getStyles = (theme) =>
       borderRadius: 28,
       justifyContent: 'center',
       alignItems: 'center',
+      backgroundColor: ASU.maroon,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 5,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      elevation: 8,
     },
-    stickyHeader: {
+    header: {
       paddingHorizontal: 20,
-      paddingBottom: 16,
-      backgroundColor: theme.background,
-    },
-    listScroll: {
-      flex: 1,
-    },
-    listScrollContent: {
-      paddingHorizontal: 20,
-      paddingTop: 8,
-    },
-    headerCard: {
-      alignItems: 'flex-start',
-    },
-    headerTitleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-      marginBottom: 8,
+      paddingBottom: 20,
     },
     title: {
-      fontSize: 22,
-      fontWeight: '700',
+      fontSize: 28,
+      fontWeight: '800',
       color: theme.text,
+      marginBottom: 8,
     },
     subtitle: {
-      fontSize: 14,
+      fontSize: 16,
       color: theme.textSecondary,
-      lineHeight: 20,
+      lineHeight: 22,
+    },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.surface,
+      marginHorizontal: 20,
+      marginBottom: 20,
+      paddingHorizontal: 16,
+      height: 48,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    searchIcon: {
+      marginRight: 10,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 16,
+      color: theme.text,
+      height: '100%',
+    },
+    tabsContainer: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      marginBottom: 20,
+      gap: 10,
+    },
+    tab: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      borderWidth: 1,
+      backgroundColor: theme.surface,
+    },
+    activeTab: {
+      backgroundColor: theme.surface, // Or maybe fill it? Let's keep it outline but colored border
+    },
+    tabText: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    activeTabText: {
+      fontWeight: '700',
+    },
+    section: {
+      paddingBottom: 100, // Space for FAB
     },
     emptyState: {
       alignItems: 'center',
-      paddingVertical: 48,
-      paddingHorizontal: 24,
+      paddingTop: 60,
+      paddingHorizontal: 40,
     },
     emptyStateIconWrap: {
-      width: 96,
-      height: 96,
-      borderRadius: 48,
+      width: 80,
+      height: 80,
+      borderRadius: 40,
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: 1,
-      marginBottom: 20,
+      marginBottom: 16,
     },
     emptyStateTitle: {
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: '700',
       marginBottom: 8,
       textAlign: 'center',
     },
     emptyStateBody: {
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: 16,
+      color: theme.textSecondary,
       textAlign: 'center',
-      maxWidth: 280,
+      lineHeight: 24,
     },
+    issueCard: {
+      marginHorizontal: 20,
+      marginBottom: 16,
+      padding: 16,
+      borderRadius: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 3,
+      borderWidth: 0, // Clean look
+    },
+    cardHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    cardTopicBadge: {
+      backgroundColor: theme.background,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+    },
+    cardTopicText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.textSecondary,
+    },
+    statusPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    statusText: {
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    issueSubject: {
+      fontSize: 16,
+      fontWeight: '700',
+      marginBottom: 6,
+    },
+    issueDescription: {
+      fontSize: 14,
+      lineHeight: 20,
+      marginBottom: 12,
+    },
+    cardFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    issueDate: {
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    
+    // Modal Styles
     modalOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      backgroundColor: 'rgba(0,0,0,0.6)',
       justifyContent: 'flex-end',
     },
     modalKeyboardView: {
@@ -377,91 +581,76 @@ const getStyles = (theme) =>
       justifyContent: 'flex-end',
     },
     newIssueSheet: {
-      maxHeight: '90%',
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      overflow: 'hidden',
+      backgroundColor: theme.surface,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      height: '85%',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      elevation: 10,
     },
     newIssueModalHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 20,
-      paddingVertical: 16,
+      paddingHorizontal: 24,
+      paddingVertical: 20,
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
     },
     newIssueModalTitle: {
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: '700',
     },
     newIssueModalScroll: {
-      maxHeight: 400,
+      flex: 1,
     },
     newIssueModalScrollContent: {
-      padding: 20,
-      paddingBottom: 32,
-    },
-    section: {
-      marginBottom: 28,
-    },
-    raisedTicketsHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-      marginTop: 32,
-    },
-    raisedTicketsTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-    },
-    sectionTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: theme.text,
-      marginBottom: 12,
+      padding: 24,
+      paddingBottom: 40,
     },
     fieldLabel: {
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: '600',
-      color: theme.text,
-      marginTop: 12,
-      marginBottom: 6,
+      marginBottom: 8,
+      marginTop: 16,
     },
     input: {
-      backgroundColor: theme.surface,
+      backgroundColor: theme.background,
       borderWidth: 1,
       borderColor: theme.border,
       borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      fontSize: 15,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      fontSize: 16,
       color: theme.text,
     },
     textarea: {
       minHeight: 120,
-      marginTop: 4,
+      paddingTop: 14,
     },
     issueChipsContainer: {
       flexDirection: 'row',
-      gap: 8,
+      gap: 10,
       paddingVertical: 4,
-      paddingRight: 8,
+      marginBottom: 8,
     },
     issueChip: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 24,
       borderWidth: 1,
       borderColor: theme.border,
-      backgroundColor: theme.surface,
+      backgroundColor: theme.background,
     },
     issueChipSelected: {
       backgroundColor: ASU.maroon,
       borderColor: ASU.maroon,
     },
     issueChipText: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: '500',
       color: theme.textSecondary,
     },
@@ -469,57 +658,23 @@ const getStyles = (theme) =>
       color: ASU.white,
     },
     submitButton: {
-      marginTop: 20,
+      marginTop: 32,
       backgroundColor: ASU.maroon,
-      borderRadius: 12,
-      paddingVertical: 14,
+      borderRadius: 14,
+      paddingVertical: 16,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
+      gap: 10,
+      shadowColor: ASU.maroon,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
     },
     submitButtonText: {
-      fontSize: 15,
+      fontSize: 16,
       fontWeight: '700',
       color: ASU.white,
-    },
-    issueCard: {
-      borderRadius: 12,
-      padding: 14,
-      marginBottom: 12,
-      borderWidth: 1,
-    },
-    issueCardHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      gap: 10,
-      marginBottom: 6,
-    },
-    issueSubject: {
-      fontSize: 15,
-      fontWeight: '600',
-      flex: 1,
-    },
-    issueStatusBadge: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 8,
-    },
-    issueStatusText: {
-      fontSize: 11,
-      fontWeight: '700',
-    },
-    issueTopic: {
-      fontSize: 13,
-      marginBottom: 6,
-    },
-    issueDescription: {
-      fontSize: 14,
-      lineHeight: 20,
-      marginBottom: 8,
-    },
-    issueDate: {
-      fontSize: 12,
     },
   });
