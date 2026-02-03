@@ -510,7 +510,7 @@ const getStyles = (theme) => StyleSheet.create({
   urgentBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: ASU.black,
+    color: ASU.white,
   },
   priceRow: {
     flexDirection: 'row',

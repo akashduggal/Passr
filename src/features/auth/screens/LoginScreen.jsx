@@ -81,7 +81,7 @@ export default function LoginScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
-            <Ionicons name="cart" size={48} color={ASU.gold} />
+            <Ionicons name="cart" size={48} color={ASU.white} />
           </View>
           <Text style={styles.appName}>Passr</Text>
           <Text style={styles.tagline}>The Marketplace for{'\n'}ASU Students</Text>
@@ -179,7 +179,7 @@ const getStyles = (theme, isDarkMode) => StyleSheet.create({
   appName: {
     fontSize: 42,
     fontWeight: '800',
-    color: ASU.gold,
+    color: ASU.white,
     marginBottom: 8,
     letterSpacing: -1,
   },

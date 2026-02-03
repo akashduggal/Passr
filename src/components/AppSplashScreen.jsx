@@ -35,7 +35,7 @@ export default function AppSplashScreen() {
             }
           ]}
         >
-          <Ionicons name="cart" size={64} color={ASU.gold} />
+          <Ionicons name="cart" size={64} color={ASU.white} />
         </Animated.View>
         
         <Animated.View style={{ opacity: fadeAnim }}>
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 56,
     fontWeight: '800',
-    color: ASU.gold,
+    color: ASU.white,
     marginBottom: 16,
     letterSpacing: -1,
     textAlign: 'center',

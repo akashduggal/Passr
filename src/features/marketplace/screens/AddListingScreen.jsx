@@ -781,7 +781,7 @@ const getStyles = (theme, insets) => StyleSheet.create({
     color: ASU.gray5,
   },
   urgentToggleTextActive: {
-    color: ASU.black,
+    color: ASU.white,
   },
   chipsScrollView: {
     maxHeight: 40,

@@ -135,7 +135,7 @@ export default function MyOffersScreen() {
     switch (status) {
       case 'accepted': return ASU.green;
       case 'rejected': return ASU.maroon;
-      default: return ASU.gold;
+      default: return ASU.warning;
     }
   };
 

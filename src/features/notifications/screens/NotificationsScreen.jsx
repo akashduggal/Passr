@@ -27,8 +27,8 @@ const NOTIFICATION_TYPES = {
   },
   offer_rejected: {
     icon: 'close-circle-outline',
-    iconColor: ASU.maroon,
-    iconBg: ASU.maroon + '18',
+    iconColor: ASU.error,
+    iconBg: ASU.error + '18',
   },
   message: {
     icon: 'chatbubble-outline',
@@ -37,8 +37,8 @@ const NOTIFICATION_TYPES = {
   },
   pickup_scheduled: {
     icon: 'calendar-outline',
-    iconColor: ASU.turquoise,
-    iconBg: ASU.turquoise + '18',
+    iconColor: ASU.info,
+    iconBg: ASU.info + '18',
   },
 };
 
@@ -267,7 +267,7 @@ const getStyles = (theme) =>
     },
     cardUnread: {
       borderLeftWidth: 3,
-      borderLeftColor: ASU.maroon,
+      borderLeftColor: theme.primary,
     },
     iconWrap: {
       width: 44,
@@ -320,7 +320,7 @@ const getStyles = (theme) =>
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: ASU.maroon,
+      backgroundColor: theme.primary,
       marginLeft: 8,
       marginTop: 6,
     },

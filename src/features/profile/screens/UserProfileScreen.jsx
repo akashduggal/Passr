@@ -25,7 +25,7 @@ export default function UserProfileScreen({ isTab = false }) {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { isDarkMode } = useTheme();
+  const { isDarkMode, toggleTheme } = useTheme();
   const theme = getTheme(isDarkMode);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -218,6 +218,30 @@ export default function UserProfileScreen({ isTab = false }) {
             <Switch
               value={showOnboarding}
               onValueChange={toggleOnboarding}
+              trackColor={{ false: theme.gray6, true: ASU.maroon }}
+              thumbColor={ASU.white}
+            />
+          </View>
+
+          {/* Dark Mode Toggle */}
+          <View style={{ 
+            flexDirection: 'row', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            backgroundColor: theme.surface,
+            padding: 16,
+            borderRadius: 12,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: theme.border
+          }}>
+            <View>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text }}>Dark Mode</Text>
+              <Text style={{ fontSize: 12, color: theme.textSecondary }}>Toggle app theme</Text>
+            </View>
+            <Switch
+              value={isDarkMode}
+              onValueChange={toggleTheme}
               trackColor={{ false: theme.gray6, true: ASU.maroon }}
               thumbColor={ASU.white}
             />

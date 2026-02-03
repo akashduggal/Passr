@@ -175,7 +175,7 @@ const getStyles = (theme) => StyleSheet.create({
   productPrice: {
     fontSize: 18,
     fontWeight: '700',
-    color: ASU.maroon,
+    color: theme.primary,
   },
   postedDate: {
     fontSize: 11,
@@ -185,7 +185,7 @@ const getStyles = (theme) => StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: ASU.maroon,
+    backgroundColor: theme.primary,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -193,7 +193,7 @@ const getStyles = (theme) => StyleSheet.create({
   soldBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: ASU.white,
+    color: theme.primaryText,
     letterSpacing: 0.5,
   },
   urgentBadge: {
