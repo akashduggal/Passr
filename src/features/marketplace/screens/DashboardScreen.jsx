@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, StyleSheet, Platform, TouchableOpacity, ScrollView, Modal, Pressable, RefreshControl } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Platform, TouchableOpacity, ScrollView, Modal, Pressable, RefreshControl, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +18,8 @@ const SORT_OPTIONS = [
   { id: 'price_desc', label: 'Price: High to Low' },
 ];
 
+const PAGE_SIZE = 10;
+
 export default function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -33,33 +35,64 @@ export default function DashboardScreen() {
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Pagination State
   const [allProducts, setAllProducts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchListings = useCallback(async (showLoader = true) => {
-    if (showLoader) setIsLoading(true);
+  const fetchListings = useCallback(async (reset = false) => {
+    if (loadingMore) return;
+    
+    const nextPage = reset ? 1 : page + 1;
+    if (!reset && !hasMore) return;
+
+    if (reset) {
+      setIsLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      // Add artificial delay for mocking loading state
-      if (showLoader) await new Promise(resolve => setTimeout(resolve, 1500));
-      const data = await listingService.getAllListings();
-      setAllProducts(data);
+      if (reset) await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
+      
+      const categoryName = categories[selectedCategory];
+      const data = await listingService.getAllListings(nextPage, PAGE_SIZE, categoryName, selectedSortId);
+      
+      if (reset) {
+        setAllProducts(data);
+        setPage(1);
+      } else {
+        setAllProducts(prev => [...prev, ...data]);
+        setPage(nextPage);
+      }
+      
+      setHasMore(data.length === PAGE_SIZE);
     } catch (error) {
       console.error('Failed to fetch listings:', error);
     } finally {
-      if (showLoader) setIsLoading(false);
+      setIsLoading(false);
+      setLoadingMore(false);
+      if (reset) setIsRefreshing(false);
     }
-  }, []);
+  }, [selectedCategory, selectedSortId, page, hasMore, loadingMore, categories]);
+
+  // Initial load and filter change
+  useEffect(() => {
+    fetchListings(true);
+  }, [selectedCategory, selectedSortId]);
 
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await fetchListings(false);
-    setIsRefreshing(false);
+    await fetchListings(true);
   }, [fetchListings]);
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchListings();
-    }, [fetchListings])
-  );
+  const loadMore = () => {
+    if (!isLoading && !loadingMore && hasMore) {
+      fetchListings(false);
+    }
+  };
 
   const getCategoryContent = (index) => {
     const contentMap = {
@@ -72,32 +105,17 @@ export default function DashboardScreen() {
     return contentMap[index] || contentMap[0];
   };
 
-  const categoryContent = getCategoryContent(selectedCategory);
-
   const selectedSortLabel = SORT_OPTIONS.find((o) => o.id === selectedSortId)?.label ?? SORT_OPTIONS[0].label;
-
-  const sortedProducts = useMemo(() => {
-    const selectedCategoryName = categories[selectedCategory];
-    // Filter products by selected category and exclude sold items
-    const filteredProducts = allProducts.filter(
-      (product) => product.category === selectedCategoryName && !product.sold
-    );
-    // Sort filtered products
-    const arr = [...filteredProducts];
-    switch (selectedSortId) {
-      case 'price_asc':
-        return arr.sort((a, b) => a.price - b.price);
-      case 'price_desc':
-        return arr.sort((a, b) => b.price - a.price);
-      case 'newest':
-        return arr.sort((a, b) => new Date(b.postedAt || 0) - new Date(a.postedAt || 0));
-      default:
-        return arr;
-    }
-  }, [selectedCategory, selectedSortId, categories, allProducts]);
-
-
   const styles = getStyles(theme);
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={theme.primary} />
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
@@ -122,7 +140,7 @@ export default function DashboardScreen() {
           contentContainerStyle={styles.chipsContainer}
           style={styles.chipsScrollView}
         >
-        {isLoading ? (
+        {isLoading && allProducts.length === 0 ? (
           // Show 4 skeleton chips while loading
           [...Array(4)].map((_, index) => (
             <CategoryChipSkeleton key={`skeleton-${index}`} />
@@ -154,7 +172,8 @@ export default function DashboardScreen() {
         )}
         </ScrollView>
       </View>
-      {isLoading ? (
+      
+      {isLoading && allProducts.length === 0 ? (
         <SortFilterSkeleton />
       ) : (
         <View style={styles.sortFilterBar}>
@@ -181,66 +200,70 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
       )}
-      <ScrollView 
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.contentContainer, { flexGrow: 1 }]}
-        alwaysBounceVertical={true}
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={theme.primary} />
-        }
-      >
-        <Modal
-          visible={sortModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setSortModalVisible(false)}
-        >
-          <Pressable style={styles.sortModalOverlay} onPress={() => setSortModalVisible(false)}>
-            <TouchableOpacity
-              style={styles.sortModalContent}
-              activeOpacity={1}
-              onPress={() => {}}
-            >
-              <View style={styles.sortModalHeader}>
-                <Text style={styles.sortModalTitle}>Sort by</Text>
-                <TouchableOpacity onPress={() => setSortModalVisible(false)} hitSlop={12}>
-                  <Ionicons name="close" size={24} color={theme.text} />
-                </TouchableOpacity>
-              </View>
-              {SORT_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.id}
-                  style={[styles.sortOption, selectedSortId === opt.id && styles.sortOptionSelected]}
-                  onPress={() => {
-                    setSelectedSortId(opt.id);
-                    setSortModalVisible(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.sortOptionText, selectedSortId === opt.id && styles.sortOptionTextSelected]}>
-                    {opt.label}
-                  </Text>
-                  {selectedSortId === opt.id && (
-                    <Ionicons name="checkmark" size={20} color={ASU.maroon} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </TouchableOpacity>
-          </Pressable>
-        </Modal>
-        <View style={styles.productsGrid}>
-          {isLoading ? (
-            Array.from({ length: 6 }).map((_, i) => (
+
+      {isLoading && allProducts.length === 0 ? (
+         <View style={styles.productsGrid}>
+            {Array.from({ length: 6 }).map((_, i) => (
               <ProductTileSkeleton key={i} />
-            ))
-          ) : (
-            sortedProducts.map((product) => (
-              <ProductTile key={product.id} product={product} />
-            ))
-          )}
-        </View>
-      </ScrollView>
+            ))}
+         </View>
+      ) : (
+        <FlatList
+          data={allProducts}
+          renderItem={({ item }) => <ProductTile product={item} />}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          contentContainerStyle={styles.contentContainer}
+          columnWrapperStyle={styles.columnWrapper}
+          showsVerticalScrollIndicator={false}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+          }
+        />
+      )}
+
+      <Modal
+        visible={sortModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSortModalVisible(false)}
+      >
+        <Pressable style={styles.sortModalOverlay} onPress={() => setSortModalVisible(false)}>
+          <TouchableOpacity
+            style={styles.sortModalContent}
+            activeOpacity={1}
+            onPress={() => {}}
+          >
+            <View style={styles.sortModalHeader}>
+              <Text style={styles.sortModalTitle}>Sort by</Text>
+              <TouchableOpacity onPress={() => setSortModalVisible(false)} hitSlop={12}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+            {SORT_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.id}
+                style={[styles.sortOption, selectedSortId === opt.id && styles.sortOptionSelected]}
+                onPress={() => {
+                  setSelectedSortId(opt.id);
+                  setSortModalVisible(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.sortOptionText, selectedSortId === opt.id && styles.sortOptionTextSelected]}>
+                  {opt.label}
+                </Text>
+                {selectedSortId === opt.id && (
+                  <Ionicons name="checkmark" size={20} color={ASU.maroon} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </TouchableOpacity>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -251,13 +274,14 @@ const getStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.background,
     padding: 4,
   },
-  content: {
-    flex: 1,
-  },
   contentContainer: {
     paddingHorizontal: 12,
     paddingTop: 16,
     paddingBottom: 24,
+    flexGrow: 1,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
   },
   sectionHeader: {
     marginBottom: 16,
@@ -377,6 +401,8 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingTop: 16,
   },
   searchAndChips: {
     paddingHorizontal: 12,
@@ -430,5 +456,9 @@ const getStyles = (theme) => StyleSheet.create({
   },
   chipTextSelected: {
     color: ASU.white,
+  },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
 });
