@@ -11,6 +11,7 @@ const mockUser = {
     lastSignInTime: new Date().toISOString(),
   },
   phoneNumber: null,
+  getIdToken: async () => 'mock-id-token-for-development-only',
 };
 
 const mockAuth = {
