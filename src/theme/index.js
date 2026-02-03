@@ -53,8 +53,8 @@ export const Palette = {
   secondaryLight: '#FB7185', // Rose-400
 
   // Neutrals (Slate - Clean & Technical)
-  background: '#FFFFFF', // Pure White
-  surface: '#F8FAFC',    // Slate-50: Very subtle off-white for cards
+  background: '#F8FAFC', // Slate-50: Off-white background to reduce eye strain
+  surface: '#FFFFFF',    // Pure White: Makes cards pop against the off-white background
   textPrimary: '#0F172A', // Slate-900: Deep blue-black, softer than pure black
   textSecondary: '#475569', // Slate-600: High readability gray
   textTertiary: '#94A3B8', // Slate-400
