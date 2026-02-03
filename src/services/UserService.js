@@ -136,6 +136,22 @@ class UserService {
   }
 
   /**
+   * Remove push token from user profile
+   * Call this on logout to prevent notifications
+   */
+  async removePushToken() {
+    try {
+      console.log('Removing push token...');
+      // Set token to null in backend
+      await this.updateUser({ expoPushToken: null });
+      console.log('Push token removed successfully');
+    } catch (error) {
+      console.error('Failed to remove push token:', error);
+      // Don't throw - we still want to allow logout even if this fails
+    }
+  }
+
+  /**
    * Helper to handle API responses
    */
   async handleResponse(response) {

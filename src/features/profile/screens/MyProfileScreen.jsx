@@ -2,6 +2,8 @@ import { View, Text, StyleSheet, Image, ScrollView, Platform, TouchableOpacity, 
 import { useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import auth from '../../../services/firebaseAuth';
+import userService from '../../../services/UserService';
+import { dismissAllNotifications } from '../../../services/PushNotificationService';
 import { GoogleSignin } from '../../../services/googleSignin';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
@@ -29,6 +31,12 @@ export default function MyProfileScreen() {
     
     setIsLoggingOut(true);
     try {
+      // 1. Remove push token from backend so no new notifications are sent
+      await userService.removePushToken();
+      
+      // 2. Clear any existing notifications from the device tray
+      await dismissAllNotifications();
+
       // Ensure Google Sign-In is configured
       GoogleSignin.configure({
         webClientId: '872459232362-fmrc9g7eiitgnps7i3uk6slau6ndhnkm.apps.googleusercontent.com',

@@ -85,3 +85,12 @@ export function addNotificationListeners(
     responseSubscription.remove();
   };
 }
+
+export async function dismissAllNotifications() {
+  try {
+    await Notifications.dismissAllNotificationsAsync();
+    await Notifications.setBadgeCountAsync(0);
+  } catch (error) {
+    console.error('Error dismissing notifications:', error);
+  }
+}
