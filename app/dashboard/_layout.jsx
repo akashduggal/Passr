@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Image, Text, Platform } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import auth from '../../src/services/firebaseAuth';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useNotifications } from '../../src/context/NotificationContext';
@@ -124,9 +125,9 @@ export default function DashboardLayout() {
         tabBarStyle: {
           backgroundColor: theme.surface,
           borderTopColor: theme.border,
-          height: Platform.OS === 'ios' ? 85 : 60,
+          height: Platform.OS === 'ios' ? 85 : 60 + insets.bottom,
           paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8 + insets.bottom,
           shadowColor: "#000",
           shadowOffset: {
             width: 0,
