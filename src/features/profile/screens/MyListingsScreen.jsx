@@ -62,6 +62,33 @@ export default function MyListingsScreen() {
     });
   };
 
+  const handleToggleSold = async (listing) => {
+    try {
+      const newSoldStatus = !listing.sold;
+      
+      // Optimistic update
+      setListings(currentListings => 
+        currentListings.map(item => 
+          item.id === listing.id 
+            ? { ...item, sold: newSoldStatus } 
+            : item
+        )
+      );
+
+      // Call service
+      await listingService.updateListing({ 
+        id: listing.id, 
+        sold: newSoldStatus 
+      });
+
+    } catch (error) {
+      console.error('Failed to update sold status:', error);
+      // Revert on failure
+      fetchMyListings();
+      // Optional: Show error toast
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView
@@ -96,28 +123,49 @@ export default function MyListingsScreen() {
                   product={listing} 
                   style={styles.productTileFullWidth} 
                   onPress={() => handleEditListing(listing)}
+                  disabled={false} // Allow pressing even if sold to edit
                 />
                 
-                {!listing.sold && (
-                  <>
-                    {listing.offerCount > 0 ? (
+                <View style={styles.actionsContainer}>
+                  {!listing.sold ? (
+                    <>
+                      {listing.offerCount > 0 ? (
+                        <TouchableOpacity
+                          style={styles.offersButton}
+                          onPress={() => handleViewOffers(listing)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="cash" size={16} color={ASU.white} />
+                          <Text style={styles.offersButtonText}>
+                            {listing.offerCount} Offer{listing.offerCount > 1 ? 's' : ''}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={styles.noOffersBadge}>
+                          <Text style={styles.noOffersText}>No offers yet</Text>
+                        </View>
+                      )}
+                      
                       <TouchableOpacity
-                        style={styles.offersButton}
-                        onPress={() => handleViewOffers(listing)}
-                        activeOpacity={0.8}
+                        style={styles.markSoldButton}
+                        onPress={() => handleToggleSold(listing)}
+                        activeOpacity={0.7}
                       >
-                        <Ionicons name="cash" size={16} color={ASU.white} />
-                        <Text style={styles.offersButtonText}>
-                          {listing.offerCount} Offer{listing.offerCount > 1 ? 's' : ''}
-                        </Text>
+                        <Ionicons name="checkmark-circle-outline" size={16} color={ASU.maroon} />
+                        <Text style={styles.markSoldText}>Mark as Sold</Text>
                       </TouchableOpacity>
-                    ) : (
-                      <View style={styles.noOffersBadge}>
-                        <Text style={styles.noOffersText}>No offers yet</Text>
-                      </View>
-                    )}
-                  </>
-                )}
+                    </>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.relistButton}
+                      onPress={() => handleToggleSold(listing)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="refresh-outline" size={16} color={theme.text} />
+                      <Text style={[styles.relistText, { color: theme.text }]}>Mark as Available</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             ))}
           </View>
@@ -182,6 +230,10 @@ const getStyles = (theme) => StyleSheet.create({
     width: '100%',
     marginBottom: 0,
   },
+  actionsContainer: {
+    marginTop: 8,
+    gap: 8,
+  },
   offersButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -190,7 +242,6 @@ const getStyles = (theme) => StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    marginTop: 8,
     gap: 6,
     width: '100%',
   },
@@ -205,12 +256,46 @@ const getStyles = (theme) => StyleSheet.create({
     backgroundColor: ASU.gray6,
     borderRadius: 8,
     paddingVertical: 8,
-    marginTop: 8,
     width: '100%',
   },
   noOffersText: {
     fontSize: 12,
     fontWeight: '500',
     color: theme.textSecondary,
+  },
+  markSoldButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: ASU.maroon,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 6,
+    width: '100%',
+  },
+  markSoldText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: ASU.maroon,
+  },
+  relistButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 6,
+    width: '100%',
+  },
+  relistText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

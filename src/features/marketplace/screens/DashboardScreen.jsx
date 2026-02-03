@@ -74,9 +74,9 @@ export default function DashboardScreen() {
 
   const sortedProducts = useMemo(() => {
     const selectedCategoryName = categories[selectedCategory];
-    // Filter products by selected category
+    // Filter products by selected category and exclude sold items
     const filteredProducts = allProducts.filter(
-      (product) => product.category === selectedCategoryName
+      (product) => product.category === selectedCategoryName && !product.sold
     );
     // Sort filtered products
     const arr = [...filteredProducts];
