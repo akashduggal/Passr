@@ -39,8 +39,12 @@ if (Constants.appOwnership === 'expo') {
   auth = authFn;
 } else {
   try {
+    // Silence deprecation warnings
+    globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
+    
     // Try to require the native module
-    auth = require('@react-native-firebase/auth').default;
+    const rnAuth = require('@react-native-firebase/auth').default;
+    auth = rnAuth;
   } catch (error) {
     console.warn('Firebase Auth native module not found, falling back to mock:', error.message);
     auth = authFn;

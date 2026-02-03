@@ -26,7 +26,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "useNextNotificationsApi": true
     },
     "scheme": "passr",
     "extra": {
@@ -37,6 +38,7 @@
     "owner": "akashduggal",
     "plugins": [
       "expo-router",
+      "expo-notifications",
       "@react-native-community/datetimepicker",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",

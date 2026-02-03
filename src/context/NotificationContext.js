@@ -1,5 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { notificationService } from '../services/NotificationService';
+import { registerForPushNotificationsAsync, addNotificationListeners } from '../services/PushNotificationService';
+import userService from '../services/UserService';
 import auth from '../services/firebaseAuth';
 
 const NotificationContext = createContext();
@@ -44,6 +46,41 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
+
+  useEffect(() => {
+    let removeListeners;
+
+    if (user) {
+      // Register for push notifications
+      registerForPushNotificationsAsync().then(token => {
+        if (token) {
+          console.log('Push Token obtained:', token);
+          // Save token to user profile
+          userService.updateUser({ expoPushToken: token }).catch(err => {
+            // Ignore error if backend is not ready or mock
+            console.log('Failed to sync push token (backend might be mock):', err);
+          });
+        }
+      });
+
+      // Add listeners
+      removeListeners = addNotificationListeners(
+        (notification) => {
+          console.log('Push Notification Received:', notification);
+          // Refresh in-app notifications if needed
+          fetchNotifications();
+        },
+        (response) => {
+          console.log('Push Notification Response:', response);
+          // Handle navigation if needed
+        }
+      );
+    }
+
+    return () => {
+      if (removeListeners) removeListeners();
+    };
+  }, [user, fetchNotifications]);
 
   const markAsRead = async (id) => {
     // Optimistic update
