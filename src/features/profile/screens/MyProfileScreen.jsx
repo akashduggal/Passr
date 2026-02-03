@@ -102,6 +102,10 @@ export default function MyProfileScreen() {
               <Text style={[styles.badgeText, { color: '#2E7D32' }]}>Verified</Text>
             </View>
           </View>
+          
+          <Text style={styles.memberSinceText}>
+            Member since {user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'N/A'}
+          </Text>
         </View>
 
         {/* Personal Information Section */}
@@ -116,27 +120,6 @@ export default function MyProfileScreen() {
             icon="mail-outline" 
             label="Email Address" 
             value={user?.email} 
-          />
-          <InfoItem 
-            icon="call-outline" 
-            label="Phone Number" 
-            value={user?.phoneNumber} 
-            isLast
-          />
-        </View>
-
-        {/* Account Details Section */}
-        <Text style={styles.sectionTitle}>Account Details</Text>
-        <View style={styles.sectionCard}>
-          <InfoItem 
-            icon="calendar-outline" 
-            label="Member Since" 
-            value={user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'N/A'} 
-          />
-          <InfoItem 
-            icon="time-outline" 
-            label="Last Sign In" 
-            value={user?.metadata?.lastSignInTime ? new Date(user.metadata.lastSignInTime).toLocaleDateString() : 'N/A'} 
             isLast
           />
         </View>
@@ -234,6 +217,12 @@ const getStyles = (theme, insets) => StyleSheet.create({
   badgesContainer: {
     flexDirection: 'row',
     gap: 8,
+    marginBottom: 16,
+  },
+  memberSinceText: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    marginTop: 4,
   },
   badge: {
     flexDirection: 'row',
