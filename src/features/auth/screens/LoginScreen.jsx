@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
+import PassrLogo from '../../../components/PassrLogo';
 import { GoogleSignin, statusCodes } from '../../../services/googleSignin';
 import auth from '../../../services/firebaseAuth';
 import { useTheme } from '../../../context/ThemeContext';
@@ -81,12 +82,7 @@ export default function LoginScreen() {
       {/* Header Section */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <View style={styles.logoContainer}>
-            <Image 
-              source={require('../../../../assets/Passr_logo.png')} 
-              style={styles.logoImage}
-            />
-          </View>
+          <PassrLogo />
           <Text style={styles.appName}>Passr</Text>
           <Text style={styles.tagline}>The Marketplace for{'\n'}ASU Students</Text>
         </View>
@@ -170,20 +166,6 @@ const getStyles = (theme, isDarkMode) => StyleSheet.create({
   },
   headerContent: {
     zIndex: 2,
-  },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  logoImage: {
-    width: 180,
-    height: 180,
-    resizeMode: 'contain',
   },
   appName: {
     fontSize: 42,

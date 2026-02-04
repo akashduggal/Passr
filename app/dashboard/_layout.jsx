@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import auth from '../../src/services/firebaseAuth';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useNotifications } from '../../src/context/NotificationContext';
+import PassrLogo from '../../src/components/PassrLogo';
 import { getTheme, ASU } from '../../src/theme';
 
 function HeaderRight() {
@@ -113,6 +114,7 @@ export default function DashboardLayout() {
     <Tabs
       screenOptions={{
         headerShown: true,
+        headerTitleAlign: 'center',
         headerRight: () => <HeaderRight />,
         headerStyle: { backgroundColor: theme.background },
         headerTitleStyle: { color: theme.text, fontWeight: '600' },
@@ -143,6 +145,25 @@ export default function DashboardLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          headerLeft: () => (
+            <View style={{ marginLeft: 16 }}>
+              <PassrLogo 
+                containerStyle={{ 
+                  width: 32, 
+                  height: 32, 
+                  borderRadius: 16,
+                  marginBottom: 0
+                }}
+                imageStyle={{
+                  width: 80,
+                  height: 80
+                }}
+              />
+            </View>
+          ),
+          headerTitle: () => (
+            <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text }}>Passr</Text>
+          ),
           title: 'Passr',
           tabBarLabel: "",
           headerTransparent: true,
