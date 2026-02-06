@@ -73,7 +73,7 @@ export default function AddListingScreen({ isTab = false }) {
   const [title, setTitle] = useState(editingListing?.title || '');
   const [description, setDescription] = useState(editingListing?.description || '');
   const [price, setPrice] = useState(editingListing?.price ? editingListing.price.toString() : '');
-  const [selectedCategory, setSelectedCategory] = useState(editingListing?.category || null);
+  const [selectedCategory, setSelectedCategory] = useState(editingListing?.category || params.initialCategory || null);
   const [selectedBrand, setSelectedBrand] = useState(editingListing?.brand || null);
   const [selectedCondition, setSelectedCondition] = useState(editingListing?.condition || null);
   const [selectedCommunity, setSelectedCommunity] = useState(initialCommunityId);
@@ -117,8 +117,10 @@ export default function AddListingScreen({ isTab = false }) {
       setEventDate(editingListing.eventDate || '');
       setVenue(editingListing.venue || '');
       setImages(editingListing.images || []);
+    } else if (params.initialCategory) {
+      setSelectedCategory(params.initialCategory);
     }
-  }, [params.listingData]);
+  }, [params.listingData, params.initialCategory]);
 
   const requestMediaLibraryPermission = async () => {
     if (Platform.OS === 'web') return true;

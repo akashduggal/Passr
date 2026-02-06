@@ -10,6 +10,7 @@ import ProductTile from '../../../components/ProductTile';
 import ProductTileSkeleton from '../../../components/ProductTileSkeleton';
 import CategoryChipSkeleton from '../../../components/CategoryChipSkeleton';
 import SortFilterSkeleton from '../../../components/SortFilterSkeleton';
+import EmptyMarketplacePlaceholder from '../components/EmptyMarketplacePlaceholder';
 import { listingService } from '../../../services/ListingService';
 
 const SORT_OPTIONS = [
@@ -219,6 +220,7 @@ export default function DashboardScreen() {
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
+          ListEmptyComponent={<EmptyMarketplacePlaceholder category={categories[selectedCategory]} />}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={theme.primary} />
           }
