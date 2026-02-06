@@ -5,25 +5,20 @@ import { Platform } from 'react-native';
 // Use localhost for development, can be configured via environment variables
 // For Android Emulator use 10.0.2.2, for iOS Simulator use localhost
 const getBaseUrl = () => {
-  const debuggerHost = Constants.expoConfig?.hostUri;
-  const localhost = debuggerHost?.split(':')[0];
-
-  if (!localhost) {
-    // If running in a standalone app or simulator without Expo CLI
-    if (Platform.OS === 'android') {
-      return 'http://10.0.2.2:3000/api';
-    }
-    return 'http://localhost:3000/api';
-  }
-
-  // If running with Expo CLI, use the host IP
-  return `http://${localhost}:3000/api`;
+  // Use localtunnel URL for physical device testing
+  // Remove /api suffix as it will be appended by service methods or we need the root for auth
+  return 'https://passr-dev-akash-v3.loca.lt';
+  // return 'https://passr-backend.vercel.app'
 };
 
 const BASE_URL = getBaseUrl();
 console.log('UserService initialized with BASE_URL:', BASE_URL);
 
 class UserService {
+  get baseUrl() {
+    return BASE_URL;
+  }
+
   /**
    * Helper to get authenticated headers
    */
@@ -36,6 +31,7 @@ class UserService {
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
+      'Bypass-Tunnel-Reminder': 'true', // Required for localtunnel
     };
   }
 
@@ -47,7 +43,7 @@ class UserService {
   async syncUser(userData) {
     try {
       const headers = await this.getHeaders();
-      const response = await fetch(`${BASE_URL}/users/sync`, {
+      const response = await fetch(`${BASE_URL}/api/users/sync`, {
         method: 'POST',
         headers,
         body: JSON.stringify(userData),
@@ -65,7 +61,7 @@ class UserService {
   async getCurrentUser() {
     try {
       const headers = await this.getHeaders();
-      const response = await fetch(`${BASE_URL}/users/me`, {
+      const response = await fetch(`${BASE_URL}/api/users/me`, {
         method: 'GET',
         headers,
       });
@@ -83,7 +79,7 @@ class UserService {
   async updateUser(userData) {
     try {
       const headers = await this.getHeaders();
-      const response = await fetch(`${BASE_URL}/users/me`, {
+      const response = await fetch(`${BASE_URL}/api/users/me`, {
         method: 'PUT',
         headers,
         body: JSON.stringify(userData),

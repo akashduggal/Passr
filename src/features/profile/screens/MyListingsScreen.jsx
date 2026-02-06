@@ -28,8 +28,8 @@ export default function MyListingsScreen() {
   const fetchMyListings = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Hardcoded user-1 for now, similar to Dashboard logic
-      const data = await listingService.getMyListings('user-1');
+      const currentUser = await listingService.userService.getCurrentUser();
+      const data = await listingService.getMyListings(currentUser.uid);
       setListings(data);
     } catch (error) {
       console.error('Failed to fetch my listings:', error);

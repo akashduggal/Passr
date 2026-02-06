@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
   Pressable,
+  Alert,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -48,6 +49,10 @@ function getDateOptionLabel(d, todayStart) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+import { chatService } from '../../../services/ChatService';
+import { offerService } from '../../../services/OfferService';
+import auth from '../../../services/firebaseAuth';
+
 export default function ChatScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -59,6 +64,7 @@ export default function ChatScreen() {
 
   const isSeller = params.isSeller === 'true';
   const buyerName = params.buyerName || 'Buyer';
+  const sellerName = params.sellerName || 'ASU Student';
   const listingId = params.listingId || '';
   
   // Parse offer data if available
@@ -81,53 +87,11 @@ export default function ChatScreen() {
 
   const [offerAccepted, setOfferAccepted] = useState(offerAcceptedFromParams || false);
   const [isOnline] = useState(true);
-  const [messages, setMessages] = useState(() => {
-    // Generate initial message based on offer data
-    if (offerData) {
-      let text = '';
-      if (isBundle) {
-        const itemList = offerData.items.map(item => `• ${item.title} ($${item.price})`).join('\n');
-        text = `Hi! I'm interested in purchasing a bundle of the following items from your listings:\n\n${itemList}\n\nI'd like to offer a total of $${offerAmount.toFixed(0)} for this bundle.`;
-      } else {
-        const item = offerData.items[0];
-        text = `Hi! I'm interested in your ${item.title}. I'd like to make an offer of $${offerAmount.toFixed(0)}.`;
-      }
-
-      if (offerData.message && offerData.message.trim()) {
-        text += `\n\n${offerData.message.trim()}`;
-      }
-
-      return [{
-        id: 1,
-        text,
-        sender: 'buyer', // Current user is the buyer initiating the offer
-        timestamp: new Date(),
-      }];
-    }
-
-    // Fallback for existing flows (non-bundle)
-    const initial = [
-      {
-        id: 1,
-        text: `Hi! I'm interested in your ${productTitle}. I'd like to make an offer of $${offerAmount.toFixed(0)}.`,
-        sender: 'buyer',
-        timestamp: new Date(),
-      },
-    ];
-    if (isSeller && offerAcceptedFromParams) {
-      return [
-        ...initial,
-        {
-          id: 2,
-          text: 'Hi, thanks for your interest!',
-          sender: 'seller',
-          timestamp: new Date(),
-        },
-      ];
-    }
-    return initial;
-  });
+  const [messages, setMessages] = useState([]);
+  const [chatId, setChatId] = useState(null);
   const [inputText, setInputText] = useState('');
+  
+  // Schedule state
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [scheduleDate, setScheduleDate] = useState(null);
   const [scheduleTime, setScheduleTime] = useState(null);
@@ -137,37 +101,155 @@ export default function ChatScreen() {
   const [showScheduleErrors, setShowScheduleErrors] = useState(false);
   const [scheduleTimePastWarning, setScheduleTimePastWarning] = useState(false);
 
-  const acceptOffer = () => {
-    setOfferAccepted(true);
-    const sellerMessage = {
-      id: messages.length + 1,
-      text: 'Hi',
-      sender: 'seller',
-      timestamp: new Date(),
-    };
-    setMessages([...messages, sellerMessage]);
-  };
+  const currentUser = auth().currentUser;
 
+  useEffect(() => {
+    const initChat = async () => {
+      try {
+        const otherUserId = isSeller ? params.buyerId : params.sellerId;
+        const offerId = params.offerId;
+        
+        if ((!otherUserId && !params.buyerId && !params.sellerId) || !listingId) {
+             console.log("Missing params for chat init", params);
+             return;
+        }
+        
+        // Fallback for missing otherUserId if not passed explicitly but maybe in offerData? 
+        // But for now assume params are correct from previous steps.
+        const targetUserId = otherUserId || (isSeller ? offerData?.buyerId : offerData?.sellerId);
+
+        if (!targetUserId) return;
+
+        const chat = await chatService.createOrGetChat(targetUserId, listingId, offerId);
+        setChatId(chat._id);
+        
+        const fetchMessagesAndStatus = async () => {
+          try {
+            const msgs = await chatService.getMessages(chat._id);
+            // Sort by createdAt asc
+            msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            
+            setMessages(msgs.map(m => ({
+                id: m._id,
+                text: m.text,
+                sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+                timestamp: new Date(m.createdAt),
+            })));
+
+            // Poll offer status if we have an offerId and it's not accepted yet
+            if (offerId) {
+              const offer = await offerService.getOfferById(offerId);
+              if (offer && offer.status === 'accepted') {
+                setOfferAccepted(true);
+              }
+            }
+          } catch(e) {
+            console.error("Error fetching data:", e);
+          }
+        };
+
+        fetchMessagesAndStatus();
+      } catch (err) {
+        console.error("Chat init error", err);
+      }
+    };
+
+    initChat();
+  }, [listingId, params.buyerId, params.sellerId, params.offerId]);
+
+  // Scroll to bottom when messages change
   useEffect(() => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   }, [messages]);
 
-  const sendMessage = () => {
-    if (inputText.trim()) {
-      const newMessage = {
-        id: messages.length + 1,
-        text: inputText.trim(),
-        sender: isSeller ? 'seller' : 'buyer',
-        timestamp: new Date(),
-      };
-      setMessages([...messages, newMessage]);
-      setInputText('');
+  const sendMessage = async () => {
+    if (inputText.trim() && chatId) {
+      const text = inputText.trim();
+      setInputText(''); // Optimistic clear
+      try {
+        await chatService.sendMessage(chatId, text);
+        // Messages will be updated by poller, or we can optimistic add.
+        // Let's rely on poller for simplicity or manual fetch
+        const msgs = await chatService.getMessages(chatId);
+        msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        setMessages(msgs.map(m => ({
+            id: m._id,
+            text: m.text,
+            sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+            timestamp: new Date(m.createdAt),
+        })));
+      } catch (error) {
+        console.error("Send message error", error);
+        // Restore text if failed?
+        setInputText(text); 
+      }
     }
   };
 
-  const confirmSchedule = () => {
+
+
+  const handleAcceptOffer = async () => {
+    try {
+        if (!params.offerId) return;
+        await offerService.acceptOffer(params.offerId);
+        setOfferAccepted(true);
+        Alert.alert("Success", "Offer accepted!");
+        
+        // Refresh messages
+        if (chatId) {
+            const msgs = await chatService.getMessages(chatId);
+            msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            setMessages(msgs.map(m => ({
+                id: m._id,
+                text: m.text,
+                sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+                timestamp: new Date(m.createdAt),
+            })));
+        }
+    } catch (error) {
+        Alert.alert("Error", "Failed to accept offer");
+    }
+  };
+
+  const handleRejectOffer = async () => {
+      Alert.alert(
+          "Reject Offer",
+          "Are you sure you want to reject this offer?",
+          [
+              { text: "Cancel", style: "cancel" },
+              { 
+                  text: "Reject", 
+                  style: "destructive",
+                  onPress: async () => {
+                      try {
+                        if (!params.offerId) return;
+                        await offerService.rejectOffer(params.offerId);
+                        setOfferAccepted(false);
+                        Alert.alert("Success", "Offer rejected.");
+                        
+                        // Refresh messages
+                        if (chatId) {
+                            const msgs = await chatService.getMessages(chatId);
+                            msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                            setMessages(msgs.map(m => ({
+                                id: m._id,
+                                text: m.text,
+                                sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+                                timestamp: new Date(m.createdAt),
+                            })));
+                        }
+                      } catch (error) {
+                        Alert.alert("Error", "Failed to reject offer");
+                      }
+                  }
+              }
+          ]
+      );
+  };
+
+  const confirmSchedule = async () => {
     if (!scheduleDate || !scheduleTime) {
       setShowScheduleErrors(true);
       return;
@@ -191,13 +273,25 @@ export default function ChatScreen() {
     const text = note
       ? `Pickup scheduled \n${dateStr} at ${timeStr}\n\nNote\n${note}`
       : `Pickup scheduled \n${dateStr} at ${timeStr}`;
-    const sysMessage = {
-      id: messages.length + 1,
-      text,
-      sender: 'seller',
-      timestamp: new Date(),
-    };
-    setMessages([...messages, sysMessage]);
+    
+    // Send system message via API
+    if (chatId) {
+        try {
+            await chatService.sendMessage(chatId, text);
+            // Refresh messages
+            const msgs = await chatService.getMessages(chatId);
+            msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            setMessages(msgs.map(m => ({
+                id: m._id,
+                text: m.text,
+                sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+                timestamp: new Date(m.createdAt),
+            })));
+        } catch (e) {
+            console.error("Failed to send schedule message", e);
+        }
+    }
+
     setScheduleModalVisible(false);
     setScheduleDate(null);
     setScheduleTime(null);
@@ -205,6 +299,7 @@ export default function ChatScreen() {
     setShowDatePicker(false);
     setShowTimePicker(false);
   };
+
 
   const openScheduleModal = () => {
     const today = new Date();
@@ -265,7 +360,7 @@ export default function ChatScreen() {
     scheduleDate.toDateString() === now.toDateString();
   const timeMinimumDate = isSelectedDateToday ? now : null;
 
-  const headerTitle = isSeller ? buyerName : 'ASU Student';
+  const headerTitle = isSeller ? buyerName : sellerName;
   const showAcceptMock = !isSeller && !offerAccepted;
   const showPendingOverlay = !isSeller && !offerAccepted;
   const chatEnabled = offerAccepted;
@@ -320,14 +415,32 @@ export default function ChatScreen() {
           </View>
         </View>
 
+        {isSeller && (
+            <View style={{ flexDirection: 'row', padding: 12 }}>
+                {!offerAccepted && (
+                    <TouchableOpacity 
+                        style={[styles.acceptButton, { flex: 1, marginRight: 6, margin: 0 }]} 
+                        onPress={handleAcceptOffer}
+                    >
+                        <Text style={styles.acceptButtonText}>Accept Offer</Text>
+                    </TouchableOpacity>
+                )}
+                
+                <TouchableOpacity 
+                    style={[styles.acceptButton, { backgroundColor: ASU.maroon, flex: 1, marginLeft: !offerAccepted ? 6 : 0, margin: 0 }]} 
+                    onPress={handleRejectOffer}
+                >
+                    <Text style={[styles.acceptButtonText, { color: ASU.white }]}>
+                        {offerAccepted ? "Reject Offer" : "Reject"}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        )}
+
         {showAcceptMock && (
-          <TouchableOpacity
-            style={styles.acceptButton}
-            onPress={acceptOffer}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.acceptButtonText}>Accept Offer (Mock)</Text>
-          </TouchableOpacity>
+          <View style={{ padding: 10, alignItems: 'center' }}>
+              <Text style={{ color: theme.textSecondary }}>Offer status: {offerAccepted ? "Accepted" : "Pending"}</Text>
+          </View>
         )}
 
         {/* Messages */}

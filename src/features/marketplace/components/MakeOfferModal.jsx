@@ -11,6 +11,7 @@ import {
   Platform,
   Image,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -19,6 +20,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 import { getSellerName } from '../../../constants/currentUser';
 import ProductPreviewModal from '../../../components/ProductPreviewModal';
+import { offerService } from '../../../services/OfferService';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -41,6 +43,7 @@ export default function MakeOfferModal({
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [offerPrice, setOfferPrice] = useState('');
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Product to be previewed in the nested modal
   const [previewProduct, setPreviewProduct] = useState(null);
@@ -107,15 +110,46 @@ export default function MakeOfferModal({
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!offerPrice) return;
     
-    onSubmit({
-      items: selectedItems,
-      totalOfferAmount: parseFloat(offerPrice),
-      message,
-    });
-    onClose();
+    try {
+      setIsSubmitting(true);
+      const result = await offerService.makeOffer({
+        items: selectedItems.map(item => ({ id: item.id, title: item.title, price: item.price })),
+        amount: parseFloat(offerPrice),
+        offerAmount: parseFloat(offerPrice), // For MyOffersScreen compatibility
+        totalOfferAmount: parseFloat(offerPrice), // For backward compatibility
+        message,
+        sellerId: product.sellerId,
+        listingId: selectedItems.length === 1 ? selectedItems[0].id : null,
+        isBundle: selectedItems.length > 1
+      });
+      
+      onClose();
+      // Redirect to Chat Screen
+      router.push({
+        pathname: '/chat',
+        params: {
+          offerAmount: offerPrice.toString(),
+          productTitle: selectedItems.length > 1 ? 'Bundle Offer' : selectedItems[0].title,
+          productPrice: totalListingPrice.toString(),
+          listingId: selectedItems[0].id.toString(), // Use first item as context
+          sellerId: product.sellerId,
+          offerId: result.id,
+          offerAccepted: 'false'
+        }
+      });
+    } catch (error) {
+      if (error.message && error.message.includes('pending offer')) {
+         Alert.alert('Existing Offer', 'You already have a pending offer for this item. Please check your chats.');
+      } else {
+         Alert.alert('Error', error.message || 'Failed to send offer. Please try again.');
+      }
+      console.error('Submit offer error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!product) return null;

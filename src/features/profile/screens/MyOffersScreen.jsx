@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,94 +9,14 @@ import {
   FlatList,
   Modal,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
-
-// Mock offers data - offers made by the current user
-const MOCK_OFFERS = [
-  {
-    id: 1,
-    type: 'single',
-    items: [
-      {
-        id: 1,
-        title: 'Office Desk Chair',
-        image: null,
-        price: 45,
-      }
-    ],
-    offerAmount: 40,
-    status: 'pending', // pending, accepted, rejected
-    sellerName: 'ASU Student',
-    totalValue: 45,
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-  },
-  {
-    id: 2,
-    type: 'single',
-    items: [
-      {
-        id: 2,
-        title: 'Coffee Table',
-        image: null,
-        price: 80,
-      }
-    ],
-    offerAmount: 70,
-    status: 'accepted',
-    sellerName: 'ASU Student',
-    totalValue: 80,
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-  },
-  {
-    id: 3,
-    type: 'single',
-    items: [
-      {
-        id: 3,
-        title: 'MacBook Pro 13"',
-        image: null,
-        price: 850,
-      }
-    ],
-    offerAmount: 800,
-    status: 'rejected',
-    sellerName: 'ASU Student',
-    totalValue: 850,
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-  },
-  {
-    id: 4,
-    type: 'bundle',
-    items: [
-      { id: 101, title: 'Calculus Textbook', image: null, price: 60 },
-      { id: 102, title: 'TI-84 Calculator', image: null, price: 80 },
-      { id: 103, title: 'Lab Notebook', image: null, price: 15 },
-    ],
-    offerAmount: 130,
-    status: 'pending',
-    sellerName: 'John Doe',
-    totalValue: 155,
-    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-  },
-  {
-    id: 5,
-    type: 'bundle',
-    items: [
-      { id: 201, title: 'Dorm Lamp', image: null, price: 20 },
-      { id: 202, title: 'Mini Fan', image: null, price: 15 },
-    ],
-    offerAmount: 30,
-    status: 'accepted',
-    sellerName: 'Jane Smith',
-    totalValue: 35,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-  }
-];
+import { offerService } from '../../../services/OfferService';
 
 function formatDate(date) {
   const now = new Date();
@@ -120,16 +40,62 @@ export default function MyOffersScreen() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme);
-  const [activeFilter, setActiveFilter] = useState('All'); // All, Single, Bundle
-  const [selectedBundle, setSelectedBundle] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
 
+  const [activeTab, setActiveTab] = useState('active'); // active, history
+  const [activeFilter, setActiveFilter] = useState('All'); // All, Single, Bundle
+  const [selectedOffer, setSelectedOffer] = useState(null); // For detail modal
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedBundle, setSelectedBundle] = useState(null);
+  const [offers, setOffers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchMyOffers = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await offerService.getMyOffers();
+      
+      // Transform backend data to match UI component expectations
+      const transformedOffers = data.map(offer => ({
+        ...offer,
+        type: offer.items.length > 1 ? 'bundle' : 'single',
+        totalValue: offer.items.reduce((sum, item) => sum + item.price, 0),
+        createdAt: new Date(offer.createdAt)
+      }));
+      
+      setOffers(transformedOffers);
+    } catch (error) {
+      console.error('Failed to fetch offers:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchMyOffers();
+    }, [fetchMyOffers])
+  );
+
+  // Filter offers based on active tab and filter
   const filteredOffers = useMemo(() => {
-    if (activeFilter === 'All') return MOCK_OFFERS;
-    return MOCK_OFFERS.filter(offer =>
-      activeFilter === 'Single' ? offer.type === 'single' : offer.type === 'bundle'
-    );
-  }, [activeFilter]);
+    let result = offers;
+
+    // 1. Filter by Status (Active vs History)
+    if (activeTab === 'active') {
+      result = result.filter((o) => o.status === 'pending' || o.status === 'accepted');
+    } else {
+      result = result.filter((o) => o.status === 'rejected' || o.status === 'completed' || o.status === 'cancelled');
+    }
+
+    // 2. Filter by Type (All vs Single vs Bundle)
+    if (activeFilter === 'Single') {
+      result = result.filter(o => o.type === 'single');
+    } else if (activeFilter === 'Bundle') {
+      result = result.filter(o => o.type === 'bundle');
+    }
+
+    return result;
+  }, [activeTab, activeFilter, offers]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -300,6 +266,10 @@ export default function MyOffersScreen() {
                   offerAmount: offer.offerAmount.toString(),
                   productTitle: isBundle ? 'Bundle Offer' : mainItem.title,
                   productPrice: offer.totalValue.toString(),
+                  listingId: mainItem.id.toString(),
+                  sellerId: offer.sellerId || '',
+                  offerId: offer.id,
+                  offerAccepted: 'true',
                 },
               });
             }}
@@ -315,8 +285,27 @@ export default function MyOffersScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={[styles.filterContainer, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 16 }]}>
-        {['All', 'Single', 'Bundle'].map(filter => renderFilterTab(filter))}
+      <View style={{ paddingTop: (Platform.OS === 'ios' ? 44 : 56) }}>
+        {/* Status Tabs (Active / History) */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'active' && styles.tabButtonActive]}
+            onPress={() => setActiveTab('active')}
+          >
+            <Text style={[styles.tabText, activeTab === 'active' && styles.tabTextActive]}>Active</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'history' && styles.tabButtonActive]}
+            onPress={() => setActiveTab('history')}
+          >
+            <Text style={[styles.tabText, activeTab === 'history' && styles.tabTextActive]}>History</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Type Filters (All / Single / Bundle) */}
+        <View style={styles.filterContainer}>
+          {['All', 'Single', 'Bundle'].map(filter => renderFilterTab(filter))}
+        </View>
       </View>
 
       <FlatList
@@ -404,6 +393,10 @@ export default function MyOffersScreen() {
                             offerAmount: selectedBundle.offerAmount.toString(),
                             productTitle: 'Bundle Offer',
                             productPrice: selectedBundle.totalValue.toString(),
+                            listingId: selectedBundle.items[0].id.toString(),
+                            sellerId: selectedBundle.sellerId || '',
+                            offerId: selectedBundle.id,
+                            offerAccepted: 'true',
                           },
                         });
                       }}
@@ -427,6 +420,38 @@ const getStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 10,
+    backgroundColor: theme.surface,
+    borderRadius: 8,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  tabButtonActive: {
+    backgroundColor: theme.background,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  tabTextActive: {
+    color: theme.text,
   },
   filterContainer: {
     flexDirection: 'row',

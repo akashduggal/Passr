@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import PassrLogo from '../../../components/PassrLogo';
 import { GoogleSignin, statusCodes } from '../../../services/googleSignin';
 import auth from '../../../services/firebaseAuth';
+import UserService from '../../../services/UserService';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 
@@ -58,6 +59,13 @@ export default function LoginScreen() {
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
       await auth().signInWithCredential(googleCredential);
       
+      // Sync user with backend
+      await UserService.syncUser({
+        email: user.email,
+        name: user.name,
+        picture: user.photo,
+      });
+
       // Keep loading state true while navigating
       router.replace('/dashboard');
     } catch (error) {
@@ -132,11 +140,54 @@ export default function LoginScreen() {
           {(__DEV__ || Constants.appOwnership === 'expo') && (
             <TouchableOpacity
               style={[styles.googleButton, { backgroundColor: isDarkMode ? ASU.gray2 : ASU.gray6 }]}
-              onPress={() => {
-                 auth().signInAnonymously()
-                   .then(() => router.replace('/dashboard'))
-                   .catch(() => router.replace('/dashboard'));
-              }}
+              onPress={async () => {
+                 try {
+                    // Call backend to perform dev login and get user/token
+                    // NOTE: The backend mounts auth routes at /auth, NOT /api/auth
+                    // UserService.baseUrl includes /api for other services, but auth is root level
+                    // We need to strip /api if it exists, or just use the root URL
+                    
+                    const rootUrl = UserService.baseUrl.replace(/\/api$/, '');
+                    console.log('Attempting dev login to:', `${rootUrl}/auth/dev-login`);
+                    
+                    const response = await fetch(`${rootUrl}/auth/dev-login`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        userId: 'dev-user-123',
+                        email: 'dev@asu.edu',
+                        name: 'Dev Student'
+                      })
+                    });
+                   
+                   const text = await response.text();
+                   console.log('Dev login response text:', text);
+
+                   let data;
+                   try {
+                     data = JSON.parse(text);
+                   } catch (e) {
+                     console.error('Failed to parse dev login response:', text);
+                     throw new Error('Invalid JSON response');
+                   }
+                   
+                   if (data.token) {
+                      // In a real app we'd store this token. 
+                      // For now, UserService.getHeaders() and firebaseAuth.js mock are aligned to use 'mock-id-token-for-development-only'
+                      // But we should ensure the frontend state is updated
+                      
+                      // We still call signInAnonymously on the frontend "auth" object to trigger onAuthStateChanged
+                      await auth().signInAnonymously();
+                      router.replace('/dashboard');
+                   }
+                 } catch (error) {
+                    console.error('Dev login failed:', error);
+                    // Fallback to local only if backend fails
+                    auth().signInAnonymously()
+                      .then(() => router.replace('/dashboard'))
+                      .catch(() => router.replace('/dashboard'));
+                 }
+               }}
               activeOpacity={0.8}
             >
               <Ionicons name="code-slash-outline" size={24} color={theme.text} />

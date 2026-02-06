@@ -24,6 +24,8 @@ import ProductTile from '../../../components/ProductTile';
 import SellerInfoCard from '../../../components/SellerInfoCard';
 import MakeOfferModal from '../components/MakeOfferModal';
 import { listingService } from '../../../services/ListingService';
+import { offerService } from '../../../services/OfferService';
+import auth from '../../../services/firebaseAuth';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CAROUSEL_HEIGHT = 300;
@@ -94,16 +96,46 @@ export default function ProductDetailScreen() {
   const livingCommunity = product.livingCommunity || product.location || null;
   const sellerId = product.sellerId || null;
   const sellerName = getSellerName(sellerId);
-  const isViewerSeller = sellerId === CURRENT_USER_ID;
+  const currentUser = auth().currentUser;
+  const isViewerSeller = sellerId === (currentUser?.uid || CURRENT_USER_ID);
   const isSold = !!product.sold;
-  const showMakeOffer = !isViewerSeller && !isSold;
+  const [existingOffer, setExistingOffer] = useState(null);
+  const showMakeOffer = !isViewerSeller && !isSold && !existingOffer;
+  const showGoToChat = !isViewerSeller && !isSold && existingOffer;
   const showWishlist = !isViewerSeller;
+  const showShowOffers = isViewerSeller;
 
   const [currentPage, setCurrentPage] = useState(0);
   const [offerModalVisible, setOfferModalVisible] = useState(false);
   const [offerPrice, setOfferPrice] = useState(() => product.price || 0);
   const [fullScreenImageIndex, setFullScreenImageIndex] = useState(null);
   const [fullScreenViewedIndex, setFullScreenViewedIndex] = useState(0);
+
+  // Check for existing offers
+  useEffect(() => {
+    let isMounted = true;
+    if (isViewerSeller) return;
+
+    const checkExistingOffer = async () => {
+      try {
+        const myOffers = await offerService.getMyOffers();
+        if (!isMounted) return;
+        
+        // Find if any offer includes this product and is active (pending or accepted)
+        const found = myOffers.find(o => 
+          (o.status === 'pending' || o.status === 'accepted') &&
+          o.items.some(item => item.id === product.id)
+        );
+        
+        setExistingOffer(found);
+      } catch (error) {
+        console.error('Failed to check existing offers:', error);
+      }
+    };
+
+    checkExistingOffer();
+    return () => { isMounted = false; };
+  }, [product.id, isViewerSeller]);
 
   const openFullScreenImage = (index) => {
     setFullScreenImageIndex(index);
@@ -318,8 +350,25 @@ export default function ProductDetailScreen() {
       </ScrollView>
 
       {/* Actions — Make an Offer and Wishlist only for buyers; sellers see neither on own listings */}
-      {(showMakeOffer || showWishlist) && (
+      {(showMakeOffer || showGoToChat || showWishlist || showShowOffers) && (
         <View style={styles.actions}>
+          {showShowOffers && (
+             <TouchableOpacity
+              style={[styles.messageButton, { backgroundColor: theme.primary || ASU.gold }]}
+              onPress={() => {
+                router.push({
+                  pathname: '/profile/listing-offers',
+                  params: {
+                    listing: JSON.stringify(product)
+                  }
+                });
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="list-outline" size={20} color={ASU.white} />
+              <Text style={styles.messageButtonText}>Show Offers</Text>
+            </TouchableOpacity>
+          )}
           {showMakeOffer && (
             <TouchableOpacity
               style={styles.messageButton}
@@ -328,6 +377,31 @@ export default function ProductDetailScreen() {
             >
               <Ionicons name="chatbubble-outline" size={20} color={ASU.white} />
               <Text style={styles.messageButtonText}>Make Offer</Text>
+            </TouchableOpacity>
+          )}
+          {showGoToChat && (
+            <TouchableOpacity
+              style={[styles.messageButton, { backgroundColor: theme.primary || ASU.gold }]}
+              onPress={() => {
+                const isBundle = existingOffer.items.length > 1;
+                router.push({
+                  pathname: '/chat',
+                  params: {
+                    offerAmount: existingOffer.offerAmount.toString(),
+                    productTitle: isBundle ? 'Bundle Offer' : existingOffer.items[0].title,
+                    productPrice: existingOffer.totalValue ? existingOffer.totalValue.toString() : product.price.toString(),
+                    listingId: product.id.toString(),
+                     sellerId: product.sellerId,
+                     sellerName: sellerName,
+                     offerId: existingOffer.id,
+                     offerAccepted: existingOffer.status === 'accepted' ? 'true' : 'false'
+                  }
+                });
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chatbubbles-outline" size={20} color={ASU.maroon} />
+              <Text style={[styles.messageButtonText, { color: ASU.maroon }]}>Go to Chat</Text>
             </TouchableOpacity>
           )}
           {showWishlist && (

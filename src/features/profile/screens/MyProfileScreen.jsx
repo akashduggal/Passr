@@ -26,6 +26,13 @@ export default function MyProfileScreen() {
     setShowLogoutModal(true);
   };
 
+  const navigateToLogin = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'login' }],
+    });
+  };
+
   const handleLogout = async () => {
     if (isLoggingOut) return;
     
@@ -151,6 +158,16 @@ export default function MyProfileScreen() {
               </>
             )}
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.logoutButton, { marginTop: 12, backgroundColor: theme.surface, borderColor: theme.border }]}
+            onPress={navigateToLogin}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back-outline" size={20} color={theme.text} />
+            <Text style={[styles.logoutText, { color: theme.text }]}>Back to Login</Text>
+          </TouchableOpacity>
+
           <Text style={styles.versionText}>Version 1.0.0</Text>
         </View>
 

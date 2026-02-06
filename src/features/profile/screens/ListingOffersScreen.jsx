@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,43 +7,15 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
-
-// Mock offers data for a specific listing
-const MOCK_LISTING_OFFERS = [
-  {
-    id: 1,
-    buyerName: 'John Doe',
-    buyerAvatar: null,
-    offerAmount: 40,
-    message: 'Hi, I\'m interested in this item. Would you accept $40?',
-    status: 'pending', // pending, accepted, rejected
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-  },
-  {
-    id: 2,
-    buyerName: 'Jane Smith',
-    buyerAvatar: null,
-    offerAmount: 42,
-    message: 'Can you do $42? I can pick it up today.',
-    status: 'accepted',
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-  },
-  {
-    id: 3,
-    buyerName: 'Mike Johnson',
-    buyerAvatar: null,
-    offerAmount: 38,
-    message: 'Is $38 possible?',
-    status: 'rejected',
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-  },
-];
+import { offerService } from '../../../services/OfferService';
 
 function formatDate(date) {
   const now = new Date();
@@ -68,17 +40,59 @@ export default function ListingOffersScreen() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const listing = params.listing ? JSON.parse(params.listing) : null;
-  const [offers] = useState(MOCK_LISTING_OFFERS);
+  const [offers, setOffers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('pending'); // 'accepted' | 'pending' | 'rejected'
   const styles = getStyles(theme);
 
-  const handleAcceptOffer = (offer) => {// TODO: Implement accept offer logic
-    console.log('Accept offer:', offer.id);
+  const fetchOffers = useCallback(async () => {
+    if (!listing?.id) return;
+    
+    try {
+      setIsLoading(true);
+      const data = await offerService.getOffersForListing(listing.id);
+      
+      // Map backend data to UI expected format
+      const mappedOffers = data.map(offer => ({
+        ...offer,
+        // Ensure offerAmount exists (backend might send amount or offerAmount)
+        offerAmount: offer.amount || offer.offerAmount || 0,
+        createdAt: new Date(offer.createdAt)
+      }));
+      
+      setOffers(mappedOffers);
+    } catch (error) {
+      console.error('Failed to fetch offers:', error);
+      Alert.alert('Error', 'Failed to load offers');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [listing?.id]);
+
+  useEffect(() => {
+    fetchOffers();
+  }, [fetchOffers]);
+
+  const handleAcceptOffer = async (offer) => {
+    try {
+      await offerService.acceptOffer(offer.id);
+      Alert.alert('Success', 'Offer accepted!');
+      fetchOffers();
+    } catch (error) {
+      console.error('Accept offer error:', error);
+      Alert.alert('Error', 'Failed to accept offer');
+    }
   };
 
-  const handleRejectOffer = (offer) => {
-    // TODO: Implement reject offer logic
-    console.log('Reject offer:', offer.id);
+  const handleRejectOffer = async (offer) => {
+    try {
+      await offerService.rejectOffer(offer.id);
+      Alert.alert('Success', 'Offer rejected');
+      fetchOffers();
+    } catch (error) {
+      console.error('Reject offer error:', error);
+      Alert.alert('Error', 'Failed to reject offer');
+    }
   };
 
   const handleChat = (offer) => {
@@ -87,7 +101,9 @@ export default function ListingOffersScreen() {
       params: {
         isSeller: 'true',
         buyerName: offer.buyerName || 'Buyer',
+        buyerId: offer.buyerId || '',
         listingId: (listing?.id ?? '').toString(),
+        offerId: offer.id,
         productTitle: listing?.title || 'Product',
         productPrice: (listing?.price ?? 0).toString(),
         offerAmount: offer.offerAmount.toString(),
@@ -164,7 +180,11 @@ export default function ListingOffersScreen() {
         </View>
 
         {/* Offers List (by status tab) */}
-        {filteredOffers.length === 0 ? (
+        {isLoading ? (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={ASU.maroon} />
+          </View>
+        ) : filteredOffers.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="cash-outline" size={64} color={theme.textSecondary} />
             <Text style={styles.emptyTitle}>
