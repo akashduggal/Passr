@@ -253,7 +253,7 @@ export default function MakeOfferModal({
                   <View style={styles.bundlePromoText}>
                     <Text style={styles.bundlePromoTitle}>Bundle & Save</Text>
                     <Text style={styles.bundlePromoSubtitle}>
-                      Shop {sellerListings.length} other items from {getSellerName(product.sellerId)} to save.
+                      Shop {sellerListings.length} other items from {product.sellerName || getSellerName(product.sellerId)} to save.
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />

@@ -95,7 +95,8 @@ export default function ProductDetailScreen() {
   const title = product.title || `${product.category || 'Item'}${product.brand ? ` · ${product.brand}` : ''}`;
   const livingCommunity = product.livingCommunity || product.location || null;
   const sellerId = product.sellerId || null;
-  const sellerName = getSellerName(sellerId);
+  // Use backend provided name first, fallback to mock helper
+  const sellerName = product.sellerName || getSellerName(sellerId);
   const currentUser = auth().currentUser;
   const isViewerSeller = sellerId === (currentUser?.uid || CURRENT_USER_ID);
   const isSold = !!product.sold;

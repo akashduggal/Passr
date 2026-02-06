@@ -26,7 +26,7 @@ export default function SellerProfileScreen() {
   const styles = getStyles(theme);
 
   const sellerId = params.sellerId || '';
-  const sellerName = params.sellerName || 'ASU Student';
+  const paramSellerName = params.sellerName;
   const livingCommunity = params.livingCommunity || '';
   const autoSelectId = params.autoSelectId || null;
   const initialMode = params.initialMode === 'selection';
@@ -37,6 +37,15 @@ export default function SellerProfileScreen() {
   const [offerModalVisible, setOfferModalVisible] = useState(false);
 
   const [sellerListings, setSellerListings] = useState([]);
+
+  // Derive seller name from params or listings
+  const sellerName = useMemo(() => {
+    if (paramSellerName && paramSellerName !== 'ASU Student') return paramSellerName;
+    if (sellerListings.length > 0 && sellerListings[0].sellerName) {
+      return sellerListings[0].sellerName;
+    }
+    return 'ASU Student';
+  }, [paramSellerName, sellerListings]);
 
   // Get all listings by this seller: by sellerId when provided, else by livingCommunity
   useEffect(() => {

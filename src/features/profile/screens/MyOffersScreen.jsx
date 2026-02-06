@@ -270,6 +270,7 @@ export default function MyOffersScreen() {
                   sellerId: offer.sellerId || '',
                   offerId: offer.id,
                   offerAccepted: 'true',
+                  sellerName: offer.sellerName || 'Seller',
                 },
               });
             }}
@@ -395,6 +396,7 @@ export default function MyOffersScreen() {
                             productPrice: selectedBundle.totalValue.toString(),
                             listingId: selectedBundle.items[0].id.toString(),
                             sellerId: selectedBundle.sellerId || '',
+                            sellerName: selectedBundle.sellerName || 'Seller',
                             offerId: selectedBundle.id,
                             offerAccepted: 'true',
                           },
