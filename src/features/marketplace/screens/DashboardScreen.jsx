@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, StyleSheet, Platform, TouchableOpacity, ScrollView, Modal, Pressable, RefreshControl, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Platform, TouchableOpacity, ScrollView, Modal, Pressable, RefreshControl, FlatList, ActivityIndicator, Keyboard } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,8 +9,8 @@ import { ENABLE_TICKETS } from '../../../constants/featureFlags';
 import ProductTile from '../../../components/ProductTile';
 import ProductTileSkeleton from '../../../components/ProductTileSkeleton';
 import CategoryChipSkeleton from '../../../components/CategoryChipSkeleton';
-import SortFilterSkeleton from '../../../components/SortFilterSkeleton';
 import EmptyMarketplacePlaceholder from '../components/EmptyMarketplacePlaceholder';
+import NoSearchResults from '../components/NoSearchResults';
 import { listingService } from '../../../services/ListingService';
 
 const SORT_OPTIONS = [
@@ -29,19 +29,35 @@ export default function DashboardScreen() {
   const headerHeight = Platform.OS === 'ios' ? 44 : 56;
   const topPadding = insets.top + headerHeight + 8;
 
-  const baseCategories = ['Furniture', 'Electronics', 'Escooters', 'Kitchen'];
+  const [selectedCategory, setSelectedCategory] = useState(0); // 0 is always "All"
+  const baseCategories = ['All', 'Furniture', 'Electronics', 'Escooters', 'Kitchen'];
   const categories = ENABLE_TICKETS ? [...baseCategories, 'Tickets'] : baseCategories;
-  const [selectedCategory, setSelectedCategory] = useState(0);
   const [selectedSortId, setSelectedSortId] = useState('newest');
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [submittedSearchQuery, setSubmittedSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   
   // Pagination State
   const [allProducts, setAllProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  const handleSearchSubmit = () => {
+    Keyboard.dismiss();
+    setSubmittedSearchQuery(searchQuery);
+    setIsSearching(true);
+  };
+
+  const handleClearSearch = () => {
+    Keyboard.dismiss();
+    setSearchQuery('');
+    setSubmittedSearchQuery('');
+    setIsSearching(false);
+  };
 
   const fetchListings = useCallback(async (reset = false) => {
     if (loadingMore) return;
@@ -51,6 +67,7 @@ export default function DashboardScreen() {
 
     if (reset) {
       setIsLoading(true);
+      setAllProducts([]); // Clear current products to show skeletons
     } else {
       setLoadingMore(true);
     }
@@ -59,7 +76,10 @@ export default function DashboardScreen() {
       if (reset) await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
       
       const categoryName = categories[selectedCategory];
-      const data = await listingService.getAllListings(nextPage, PAGE_SIZE, categoryName, selectedSortId);
+      // If "All" is selected (index 0), send null/undefined to backend to search everything
+      const categoryParam = selectedCategory === 0 ? null : categoryName;
+      
+      const data = await listingService.getAllListings(nextPage, PAGE_SIZE, categoryParam, selectedSortId, submittedSearchQuery);
       
       if (reset) {
         setAllProducts(data);
@@ -76,13 +96,14 @@ export default function DashboardScreen() {
       setIsLoading(false);
       setLoadingMore(false);
       if (reset) setIsRefreshing(false);
+      if (reset && submittedSearchQuery) setIsSearching(false);
     }
-  }, [selectedCategory, selectedSortId, page, hasMore, loadingMore, categories]);
+  }, [selectedCategory, selectedSortId, page, hasMore, loadingMore, categories, submittedSearchQuery]);
 
   // Initial load and filter change
   useEffect(() => {
     fetchListings(true);
-  }, [selectedCategory, selectedSortId]);
+  }, [selectedCategory, selectedSortId, submittedSearchQuery]);
 
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -96,12 +117,15 @@ export default function DashboardScreen() {
   };
 
   const getCategoryContent = (index) => {
+    // 0 is "All", so we shift the map or handle "All" explicitly
+    if (index === 0) return { title: 'Marketplace', subtitle: 'Browse all listings' };
+    
     const contentMap = {
-      0: { title: 'Furniture', subtitle: 'Browse furniture listings' },
-      1: { title: 'Electronics', subtitle: 'Find electronics and gadgets' },
-      2: { title: 'Escooters', subtitle: 'Explore electric scooters' },
-      3: { title: 'Kitchen', subtitle: 'Discover kitchen items' },
-      4: { title: 'Tickets', subtitle: 'Concerts, festivals, comedy & more' },
+      1: { title: 'Furniture', subtitle: 'Browse furniture listings' },
+      2: { title: 'Electronics', subtitle: 'Find electronics and gadgets' },
+      3: { title: 'Escooters', subtitle: 'Explore electric scooters' },
+      4: { title: 'Kitchen', subtitle: 'Discover kitchen items' },
+      5: { title: 'Tickets', subtitle: 'Concerts, festivals, comedy & more' },
     };
     return contentMap[index] || contentMap[0];
   };
@@ -120,88 +144,85 @@ export default function DashboardScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
-      <View style={styles.searchAndChips}>
-        <View style={styles.searchBarWrapper}>
-          <Ionicons
-            name="search-outline"
-            size={20}
-            color={theme.placeholder}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search..."
-            placeholderTextColor={theme.placeholder}
-            editable
-          />
+      <View style={styles.headerContainer}>
+        <View style={styles.searchRow}>
+          <View style={styles.searchBarWrapper}>
+            <Ionicons
+              name="search-outline"
+              size={20}
+              color={theme.placeholder}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search..."
+              placeholderTextColor={theme.placeholder}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+              onSubmitEditing={handleSearchSubmit}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={handleClearSearch} style={{ padding: 4 }}>
+                <Ionicons name="close-circle" size={18} color={theme.placeholder} />
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.iconButton, selectedSortId !== 'newest' && styles.iconButtonActive]} 
+            onPress={() => setSortModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons 
+              name="swap-vertical" 
+              size={20} 
+              color={selectedSortId !== 'newest' ? ASU.white : theme.text} 
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={() => router.push('/filters')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="options-outline" size={20} color={theme.text} />
+          </TouchableOpacity>
         </View>
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipsContainer}
           style={styles.chipsScrollView}
         >
-        {isLoading && allProducts.length === 0 ? (
-          // Show 4 skeleton chips while loading
-          [...Array(4)].map((_, index) => (
-            <CategoryChipSkeleton key={`skeleton-${index}`} />
-          ))
-        ) : (
-          categories.map((category, index) => {
-            const isSelected = selectedCategory === index;
-            return (
-              <TouchableOpacity
-                key={index}
+        {/* Chips should not show skeletons during standard loading/refreshing to avoid flickering UI */}
+        {categories.map((category, index) => {
+          const isSelected = selectedCategory === index;
+          return (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.chip,
+                isSelected && styles.chipSelected,
+              ]}
+              activeOpacity={0.7}
+              onPress={() => setSelectedCategory(index)}
+            >
+              <Text
                 style={[
-                  styles.chip,
-                  isSelected && styles.chipSelected,
+                  styles.chipText,
+                  isSelected && styles.chipTextSelected,
                 ]}
-                activeOpacity={0.7}
-                onPress={() => setSelectedCategory(index)}
               >
-                <Text
-                  style={[
-                    styles.chipText,
-                    isSelected && styles.chipTextSelected,
-                  ]}
-                >
-                  {category}
-                </Text>
-              </TouchableOpacity>
-            );
-          })
-        )}
+                {category}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
         </ScrollView>
       </View>
       
-      {isLoading && allProducts.length === 0 ? (
-        <SortFilterSkeleton />
-      ) : (
-        <View style={styles.sortFilterBar}>
-          <TouchableOpacity
-            style={styles.sortDropdown}
-            onPress={() => setSortModalVisible(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.sortDropdownLabel}>Sort by</Text>
-            <View style={styles.sortDropdownValue}>
-              <Text style={styles.sortDropdownValueText} numberOfLines={1}>
-                {selectedSortLabel}
-              </Text>
-              <Ionicons name="chevron-down" size={18} color={theme.textSecondary} />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() => router.push('/filters')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="filter" size={20} color={theme.text} />
-            <Text style={styles.filterButtonLabel}>Filter</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       {isLoading && allProducts.length === 0 ? (
          <View style={styles.productsGrid}>
             {Array.from({ length: 6 }).map((_, i) => (
@@ -220,7 +241,13 @@ export default function DashboardScreen() {
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
-          ListEmptyComponent={<EmptyMarketplacePlaceholder category={categories[selectedCategory]} />}
+          ListEmptyComponent={
+            submittedSearchQuery ? (
+              <NoSearchResults query={submittedSearchQuery} onClear={handleClearSearch} />
+            ) : (
+              <EmptyMarketplacePlaceholder category={selectedCategory === 0 ? null : categories[selectedCategory]} />
+            )
+          }
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={theme.primary} />
           }
@@ -406,31 +433,62 @@ const getStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 16,
   },
-  searchAndChips: {
-    paddingHorizontal: 12,
-    paddingBottom: 12,
+  headerContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     backgroundColor: theme.background,
     zIndex: 10,
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
   searchBarWrapper: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.surface,
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderRadius: 24, // More rounded for modern look
+    paddingHorizontal: 16,
     height: 48,
-    marginBottom: 12,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
     borderWidth: 1,
     borderColor: theme.border,
   },
+  iconButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: theme.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  iconButtonActive: {
+    backgroundColor: ASU.maroon,
+    borderColor: ASU.maroon,
+  },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: theme.text,
     height: '100%',
+    fontWeight: '500',
   },
   chipsScrollView: {
     maxHeight: 40,

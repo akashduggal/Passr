@@ -8,13 +8,17 @@ class ListingService {
   /**
    * Fetch listings from the backend with pagination, filtering, and sorting
    */
-  async getAllListings(page = 1, limit = 10, category = null, sortBy = 'newest') {
+  async getAllListings(page = 1, limit = 10, category = null, sortBy = 'newest', searchQuery = '') {
     try {
       const headers = await userService.getHeaders();
       let url = `${userService.baseUrl}/api/listings?page=${page}&limit=${limit}&sortBy=${sortBy}&excludeSold=true`;
       
       if (category) {
         url += `&category=${encodeURIComponent(category)}`;
+      }
+
+      if (searchQuery) {
+        url += `&q=${encodeURIComponent(searchQuery)}`;
       }
       
       const response = await fetch(url, {
