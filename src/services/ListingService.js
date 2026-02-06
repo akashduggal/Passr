@@ -106,6 +106,58 @@ class ListingService {
       throw error;
     }
   }
+
+  /**
+   * Get a presigned URL for uploading an image
+   * @param {string} fileType - MIME type of the file (e.g., 'image/jpeg')
+   */
+  async getPresignedUrl(fileType) {
+    try {
+      const headers = await userService.getHeaders();
+      const response = await fetch(`${userService.baseUrl}/api/upload/presigned-url`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ fileType, folder: 'listings' })
+      });
+      
+      return await userService.handleResponse(response);
+    } catch (error) {
+      console.error('ListingService.getPresignedUrl error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upload an image to S3 using a presigned URL
+   * @param {string} uri - Local file URI
+   * @param {string} presignedUrl - URL to upload to
+   * @param {string} fileType - MIME type
+   */
+  async uploadImageToS3(uri, presignedUrl, fileType) {
+    try {
+      // Fetch the file from the local URI to get a blob
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      // Upload to S3
+      const uploadResponse = await fetch(presignedUrl, {
+        method: 'PUT',
+        body: blob,
+        headers: {
+          'Content-Type': fileType,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`S3 Upload failed with status ${uploadResponse.status}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('ListingService.uploadImageToS3 error:', error);
+      throw error;
+    }
+  }
 }
 
 export const listingService = new ListingService();

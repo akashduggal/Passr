@@ -294,13 +294,45 @@ export default function AddListingScreen({ isTab = false }) {
     setIsSubmitting(true);
 
     try {
+      // 1. Reorder images locally based on cover selection
       const coverImg = images[selectedCoverIndex] || images[0];
       let orderedImages = [...images];
       
-      // Ensure cover image is first in the array for compatibility with other views
       if (selectedCoverIndex > 0 && coverImg) {
         orderedImages.splice(selectedCoverIndex, 1);
         orderedImages.unshift(coverImg);
+      }
+
+      // 2. Upload images to S3
+      const uploadedImageUrls = await Promise.all(orderedImages.map(async (img) => {
+        // If it's already a remote URL (string), just return it
+        if (typeof img === 'string' && img.startsWith('http')) {
+          return img;
+        }
+
+        // It's a local object from image picker/compressor
+        // Use the compressed detail URI if available, otherwise fall back to original
+        const uri = img.detail?.uri || img.uri || img.originalUri;
+        if (!uri) return null;
+
+        // Get file type (default to webp if compressed, else jpeg)
+        // Since we are using ImageManipulator with WEBP format in compressToDetail
+        const type = img.detail ? 'image/webp' : (img.type || 'image/jpeg');
+        
+        // Get presigned URL
+        const { presignedUrl, publicUrl } = await listingService.getPresignedUrl(type);
+        
+        // Upload to S3
+        await listingService.uploadImageToS3(uri, presignedUrl, type);
+        
+        return publicUrl;
+      }));
+
+      // Filter out any failed uploads
+      const finalImages = uploadedImageUrls.filter(url => url !== null);
+
+      if (finalImages.length === 0 && images.length > 0) {
+        throw new Error('Failed to upload images. Please try again.');
       }
 
       const listingData = {
@@ -316,8 +348,8 @@ export default function AddListingScreen({ isTab = false }) {
         urgent: isUrgent,
         eventDate,
         venue,
-        images: orderedImages,
-        coverImage: coverImg,
+        images: finalImages,
+        coverImage: finalImages[0], // Since we reordered, the first one is the cover
       };
 
       if (isEditing) {
