@@ -71,13 +71,17 @@ class ChatService {
    * @param {string} chatId 
    * @param {string} text 
    * @param {string} image - Optional base64 or URL
+   * @param {string} type - Optional 'text' or 'schedule'
+   * @param {object} schedule - Optional schedule object { date, location }
    */
-  async sendMessage(chatId, text, image = null) {
+  async sendMessage(chatId, text, image = null, type = 'text', schedule = null) {
     try {
       const headers = await userService.getHeaders();
       const payload = {
         text,
-        image
+        image,
+        type,
+        schedule
       };
       
       const response = await fetch(`${userService.baseUrl}/api/chats/${chatId}/messages`, {

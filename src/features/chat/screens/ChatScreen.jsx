@@ -132,6 +132,8 @@ export default function ChatScreen() {
             setMessages(msgs.map(m => ({
                 id: m._id,
                 text: m.text,
+                type: m.type || 'text',
+                schedule: m.schedule || null,
                 sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
                 timestamp: new Date(m.createdAt),
             })));
@@ -177,6 +179,8 @@ export default function ChatScreen() {
         setMessages(msgs.map(m => ({
             id: m._id,
             text: m.text,
+            type: m.type || 'text',
+            schedule: m.schedule || null,
             sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
             timestamp: new Date(m.createdAt),
         })));
@@ -204,6 +208,8 @@ export default function ChatScreen() {
             setMessages(msgs.map(m => ({
                 id: m._id,
                 text: m.text,
+                type: m.type || 'text',
+                schedule: m.schedule || null,
                 sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
                 timestamp: new Date(m.createdAt),
             })));
@@ -236,6 +242,8 @@ export default function ChatScreen() {
                             setMessages(msgs.map(m => ({
                                 id: m._id,
                                 text: m.text,
+                                type: m.type || 'text',
+                                schedule: m.schedule || null,
                                 sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
                                 timestamp: new Date(m.createdAt),
                             })));
@@ -270,20 +278,26 @@ export default function ChatScreen() {
     const dateStr = formatScheduleDate(scheduleDate);
     const timeStr = formatScheduleTime(scheduleTime);
     const note = scheduleLocation.trim();
-    const text = note
-      ? `Pickup scheduled \n${dateStr} at ${timeStr}\n\nNote\n${note}`
-      : `Pickup scheduled \n${dateStr} at ${timeStr}`;
+    const text = `Pickup scheduled for ${dateStr} at ${timeStr}`;
+    
+    const scheduleData = {
+        date: scheduleDate.toISOString(),
+        time: scheduleTime.toISOString(),
+        location: note
+    };
     
     // Send system message via API
     if (chatId) {
         try {
-            await chatService.sendMessage(chatId, text);
+            await chatService.sendMessage(chatId, text, null, 'schedule', scheduleData);
             // Refresh messages
             const msgs = await chatService.getMessages(chatId);
             msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
             setMessages(msgs.map(m => ({
                 id: m._id,
                 text: m.text,
+                type: m.type || 'text',
+                schedule: m.schedule || null,
                 sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
                 timestamp: new Date(m.createdAt),
             })));
@@ -333,6 +347,112 @@ export default function ChatScreen() {
     setShowTimePicker(false);
     setShowScheduleErrors(false);
     setScheduleTimePastWarning(false);
+  };
+
+  const handleReschedule = (message) => {
+    if (!message.schedule) return;
+    setScheduleDate(new Date(message.schedule.date));
+    setScheduleTime(new Date(message.schedule.time));
+    setScheduleLocation(message.schedule.location || '');
+    setScheduleModalVisible(true);
+  };
+
+  const handleCancelSchedule = () => {
+    Alert.alert(
+      "Cancel Pickup",
+      "Are you sure you want to cancel this scheduled pickup?",
+      [
+        { text: "No", style: "cancel" },
+        { 
+          text: "Yes, Cancel", 
+          style: "destructive",
+          onPress: async () => {
+            if (chatId) {
+                try {
+                    await chatService.sendMessage(chatId, 'Pickup cancelled', null, 'schedule_cancellation');
+                    const msgs = await chatService.getMessages(chatId);
+                    msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                    setMessages(msgs.map(m => ({
+                        id: m._id,
+                        text: m.text,
+                        type: m.type || 'text',
+                        schedule: m.schedule || null,
+                        sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+                        timestamp: new Date(m.createdAt),
+                    })));
+                } catch (e) {
+                    console.error("Failed to cancel schedule", e);
+                }
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleAcceptSchedule = () => {
+    Alert.alert(
+      "Confirm Pickup",
+      "Are you sure you want to accept this pickup time?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Yes, Accept", 
+          onPress: async () => {
+            if (chatId) {
+                try {
+                    await chatService.sendMessage(chatId, 'Pickup confirmed', null, 'schedule_acceptance');
+                    const msgs = await chatService.getMessages(chatId);
+                    msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                    setMessages(msgs.map(m => ({
+                        id: m._id,
+                        text: m.text,
+                        type: m.type || 'text',
+                        schedule: m.schedule || null,
+                        sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+                        timestamp: new Date(m.createdAt),
+                    })));
+                } catch (e) {
+                    console.error("Failed to accept schedule", e);
+                }
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleRejectSchedule = () => {
+    Alert.alert(
+      "Decline Pickup",
+      "Are you sure you want to decline this pickup time?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Yes, Decline", 
+          style: "destructive",
+          onPress: async () => {
+            if (chatId) {
+                try {
+                    await chatService.sendMessage(chatId, 'Pickup declined', null, 'schedule_rejection');
+                    const msgs = await chatService.getMessages(chatId);
+                    msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                    setMessages(msgs.map(m => ({
+                        id: m._id,
+                        text: m.text,
+                        type: m.type || 'text',
+                        schedule: m.schedule || null,
+                        sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+                        timestamp: new Date(m.createdAt),
+                    })));
+                } catch (e) {
+                    console.error("Failed to reject schedule", e);
+                }
+            }
+          }
+        }
+      ]
+    );
   };
 
   const scheduleDateError = showScheduleErrors && !scheduleDate;
@@ -461,7 +581,13 @@ export default function ChatScreen() {
               </View>
             </View>
           )}
-          {messages.map((message) => {
+          {(() => {
+            const lastScheduleIndex = messages.map(m => m.type).lastIndexOf('schedule');
+            const lastCancellationIndex = messages.map(m => m.type).lastIndexOf('schedule_cancellation');
+            const lastAcceptanceIndex = messages.map(m => m.type).lastIndexOf('schedule_acceptance');
+            const lastRejectionIndex = messages.map(m => m.type).lastIndexOf('schedule_rejection');
+
+            return messages.map((message, index) => {
             // Perspective-aware alignment:
             // - When seller views: buyer messages on left, seller messages on right
             // - When buyer views: buyer messages on right, seller messages on left
@@ -469,6 +595,190 @@ export default function ChatScreen() {
             const bubbleStyle = isFromCurrentUser ? styles.buyerMessage : styles.sellerMessage;
             const textStyle = isFromCurrentUser ? styles.buyerMessageText : styles.sellerMessageText;
             const timeStyle = isFromCurrentUser ? styles.buyerMessageTime : styles.sellerMessageTime;
+
+            if (message.type === 'schedule' && message.schedule) {
+                const isLatestSchedule = index === lastScheduleIndex;
+                const isCancelled = lastCancellationIndex > index;
+                const isOutdated = !isLatestSchedule && !isCancelled;
+                
+                let scheduleStatus = 'pending';
+                if (isLatestSchedule && !isCancelled) {
+                    const hasAccepted = lastAcceptanceIndex > index;
+                    const hasRejected = lastRejectionIndex > index;
+                    
+                    if (hasAccepted && (!hasRejected || lastAcceptanceIndex > lastRejectionIndex)) {
+                        scheduleStatus = 'accepted';
+                    } else if (hasRejected && (!hasAccepted || lastRejectionIndex > lastAcceptanceIndex)) {
+                        scheduleStatus = 'rejected';
+                    }
+                }
+
+                let headerText = 'Pickup Scheduled';
+                let headerIcon = 'calendar';
+                
+                if (isCancelled) {
+                    headerText = 'Pickup Cancelled';
+                    headerIcon = 'close-circle';
+                } else if (isOutdated) {
+                    headerText = 'Rescheduled';
+                    headerIcon = 'calendar';
+                } else if (scheduleStatus === 'accepted') {
+                    headerText = 'Pickup Confirmed';
+                    headerIcon = 'checkmark-circle';
+                } else if (scheduleStatus === 'rejected') {
+                    headerText = 'Pickup Declined';
+                    headerIcon = 'close-circle';
+                }
+
+                return (
+                   <View key={message.id} style={[
+                       styles.messageBubble, 
+                       bubbleStyle, 
+                       styles.scheduleBubble,
+                       !isFromCurrentUser && { borderWidth: 1, borderColor: theme.border },
+                       (isCancelled || isOutdated) && { opacity: 0.7 }
+                   ]}>
+                       <View style={[
+                           styles.scheduleHeader, 
+                           isCancelled && { backgroundColor: theme.border },
+                           isFromCurrentUser && !isCancelled && { backgroundColor: 'rgba(255,255,255,0.1)', borderBottomColor: 'rgba(255,255,255,0.2)' }
+                       ]}>
+                           <Ionicons 
+                               name={headerIcon} 
+                               size={20} 
+                               color={isCancelled ? theme.textSecondary : (isFromCurrentUser ? ASU.white : (scheduleStatus === 'accepted' ? '#2E7D32' : (scheduleStatus === 'rejected' ? '#C62828' : theme.primary)))} 
+                           />
+                           <Text style={[
+                               styles.scheduleTitle, 
+                               isCancelled && { color: theme.textSecondary },
+                               isFromCurrentUser && !isCancelled && { color: ASU.white },
+                               !isFromCurrentUser && !isCancelled && scheduleStatus === 'accepted' && { color: '#2E7D32' },
+                               !isFromCurrentUser && !isCancelled && scheduleStatus === 'rejected' && { color: '#C62828' }
+                           ]}>
+                               {headerText}
+                           </Text>
+                       </View>
+                       <Text style={[
+                           styles.scheduleDate, 
+                           isCancelled && { textDecorationLine: 'line-through', color: theme.textSecondary },
+                           isFromCurrentUser && !isCancelled && { color: ASU.white }
+                       ]}>
+                           {new Date(message.schedule.date).toLocaleDateString()} at {new Date(message.schedule.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                       </Text>
+                       {message.schedule.location ? (
+                           <View style={styles.scheduleLocationContainer}>
+                               <Ionicons 
+                                   name="location-outline" 
+                                   size={16} 
+                                   color={isCancelled ? theme.textSecondary : (isFromCurrentUser ? 'rgba(255,255,255,0.8)' : theme.textSecondary)} 
+                               />
+                               <Text style={[
+                                   styles.scheduleLocation, 
+                                   isCancelled && { textDecorationLine: 'line-through' },
+                                   isFromCurrentUser && !isCancelled && { color: 'rgba(255,255,255,0.8)' }
+                               ]}>{message.schedule.location}</Text>
+                           </View>
+                       ) : null}
+                       
+                       {!isCancelled && !isOutdated && (scheduleStatus === 'accepted' || scheduleStatus === 'rejected') && (
+                           <View style={{ marginTop: 8, padding: 8, backgroundColor: isFromCurrentUser ? 'rgba(255,255,255,0.1)' : theme.background, borderRadius: 8 }}>
+                               <Text style={{ color: isFromCurrentUser ? ASU.white : theme.text, fontSize: 13, textAlign: 'center' }}>
+                                   {scheduleStatus === 'accepted' 
+                                        ? (isSeller ? "✅ Buyer accepted this time" : "✅ You accepted this time")
+                                        : (isSeller ? "❌ Buyer declined this time" : "❌ You declined this time")
+                                   }
+                               </Text>
+                           </View>
+                       )}
+
+                       {/* Action Buttons for Seller on Active Schedule */}
+                       {isSeller && isLatestSchedule && !isCancelled && (
+                           <View style={{ flexDirection: 'row', marginTop: 12, borderTopWidth: 1, borderTopColor: isFromCurrentUser ? 'rgba(255,255,255,0.2)' : theme.border, paddingTop: 8 }}>
+                               <TouchableOpacity 
+                                   style={{ flex: 1, alignItems: 'center', padding: 8 }}
+                                   onPress={() => handleReschedule(message)}
+                               >
+                                   <Text style={{ color: isFromCurrentUser ? ASU.white : theme.primary, fontWeight: '600', fontSize: 14 }}>Reschedule</Text>
+                               </TouchableOpacity>
+                               <View style={{ width: 1, backgroundColor: isFromCurrentUser ? 'rgba(255,255,255,0.2)' : theme.border }} />
+                               <TouchableOpacity 
+                                   style={{ flex: 1, alignItems: 'center', padding: 8 }}
+                                   onPress={handleCancelSchedule}
+                               >
+                                   <Text style={{ color: isFromCurrentUser ? 'rgba(255,255,255,0.8)' : theme.textSecondary, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+                               </TouchableOpacity>
+                           </View>
+                       )}
+                       
+                       {/* Action Buttons for Buyer on Active Pending Schedule */}
+                       {!isSeller && isLatestSchedule && !isCancelled && scheduleStatus === 'pending' && (
+                           <View style={{ flexDirection: 'row', marginTop: 12, borderTopWidth: 1, borderTopColor: isFromCurrentUser ? 'rgba(255,255,255,0.2)' : theme.border, paddingTop: 8 }}>
+                               <TouchableOpacity 
+                                   style={{ flex: 1, alignItems: 'center', padding: 8 }}
+                                   onPress={handleAcceptSchedule}
+                               >
+                                   <Text style={{ color: '#2E7D32', fontWeight: '600', fontSize: 14 }}>Accept</Text>
+                               </TouchableOpacity>
+                               <View style={{ width: 1, backgroundColor: isFromCurrentUser ? 'rgba(255,255,255,0.2)' : theme.border }} />
+                               <TouchableOpacity 
+                                   style={{ flex: 1, alignItems: 'center', padding: 8 }}
+                                   onPress={handleRejectSchedule}
+                               >
+                                   <Text style={{ color: '#C62828', fontWeight: '600', fontSize: 14 }}>Decline</Text>
+                               </TouchableOpacity>
+                           </View>
+                       )}
+
+                        <Text style={[
+                            styles.messageTime, 
+                            { 
+                                color: isFromCurrentUser ? 'rgba(255,255,255,0.7)' : theme.textSecondary, 
+                                marginTop: 8, 
+                                marginRight: 12, 
+                                marginBottom: 8 
+                            }
+                        ]}>
+                         {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                       </Text>
+                   </View>
+                );
+           }
+
+           if (message.type === 'schedule_cancellation') {
+               return (
+                   <View key={message.id} style={{ alignItems: 'center', marginVertical: 12 }}>
+                       <View style={{ backgroundColor: theme.surface, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: theme.border }}>
+                           <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+                               🚫 Pickup cancelled by seller
+                           </Text>
+                       </View>
+                   </View>
+               );
+           }
+           
+           if (message.type === 'schedule_acceptance') {
+               return (
+                   <View key={message.id} style={{ alignItems: 'center', marginVertical: 12 }}>
+                       <View style={{ backgroundColor: theme.surface, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: theme.border }}>
+                           <Text style={{ color: '#2E7D32', fontSize: 12, fontWeight: '500' }}>
+                               ✅ Pickup confirmed by buyer
+                           </Text>
+                       </View>
+                   </View>
+               );
+           }
+
+           if (message.type === 'schedule_rejection') {
+               return (
+                   <View key={message.id} style={{ alignItems: 'center', marginVertical: 12 }}>
+                       <View style={{ backgroundColor: theme.surface, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: theme.border }}>
+                           <Text style={{ color: '#C62828', fontSize: 12, fontWeight: '500' }}>
+                               ❌ Pickup declined by buyer
+                           </Text>
+                       </View>
+                   </View>
+               );
+           }
 
             return (
               <View
@@ -483,7 +793,8 @@ export default function ChatScreen() {
                 </Text>
               </View>
             );
-          })}
+          });
+          })()}
         </ScrollView>
 
         {/* Input Area */}
@@ -990,7 +1301,7 @@ const getStyles = (theme) => StyleSheet.create({
     marginTop: 16,
   },
   scheduleRequired: {
-    color: ASU.maroon,
+    color: theme.primary,
   },
   scheduleInput: {
     backgroundColor: theme.background,
@@ -1010,11 +1321,11 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 15,
   },
   scheduleInputError: {
-    borderColor: ASU.maroon,
+    borderColor: theme.primary,
   },
   scheduleError: {
     fontSize: 12,
-    color: ASU.maroon,
+    color: theme.primary,
     marginTop: 4,
     marginLeft: 4,
   },
@@ -1044,7 +1355,7 @@ const getStyles = (theme) => StyleSheet.create({
   },
   scheduleTimeWarning: {
     fontSize: 12,
-    color: ASU.maroon,
+    color: theme.primary,
     marginTop: 4,
     marginLeft: 4,
   },
@@ -1059,12 +1370,12 @@ const getStyles = (theme) => StyleSheet.create({
     padding: 12,
   },
   schedulePickerDoneText: {
-    color: ASU.maroon,
+    color: theme.primary,
     fontWeight: '600',
     fontSize: 16,
   },
   scheduleConfirmButton: {
-    backgroundColor: ASU.maroon,
+    backgroundColor: theme.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -1075,5 +1386,44 @@ const getStyles = (theme) => StyleSheet.create({
     color: ASU.white,
     fontSize: 16,
     fontWeight: '700',
+  },
+  scheduleBubble: {
+    minWidth: 200,
+    maxWidth: '80%',
+    padding: 0, 
+    overflow: 'hidden',
+  },
+  scheduleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.primary + '15',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.primary + '20',
+  },
+  scheduleTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.primary,
+    marginLeft: 8,
+  },
+  scheduleDate: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.text,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+  },
+  scheduleLocationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  scheduleLocation: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    marginLeft: 4,
   },
 });
