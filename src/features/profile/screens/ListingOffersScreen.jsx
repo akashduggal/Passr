@@ -123,13 +123,13 @@ export default function ListingOffersScreen() {
     (offer) => offer.status === selectedStatus,
   );
 
+  const getOriginalTotal = (offer) => {
+    if (!offer.items || offer.items.length === 0) return 0;
+    return offer.items.reduce((sum, item) => sum + (item.price || 0), 0);
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {listing?.title || 'Listing Offers'}
-        </Text>
-      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -215,27 +215,62 @@ export default function ListingOffersScreen() {
                     <Text style={styles.offerDate}>{formatDate(offer.createdAt)}</Text>
                   </View>
                 </View>
-                {offer.status === 'pending' && (
-                  <View style={styles.pendingBadge}>
-                    <Text style={styles.pendingText}>Pending</Text>
-                  </View>
-                )}
-                {offer.status === 'accepted' && (
-                  <View style={styles.acceptedBadge}>
-                    <Text style={styles.acceptedText}>Accepted</Text>
-                  </View>
-                )}
-                {offer.status === 'rejected' && (
-                  <View style={styles.rejectedBadge}>
-                    <Text style={styles.rejectedText}>Rejected</Text>
+                <View style={styles.statusContainer}>
+                  {(offer.isBundle || (offer.items && offer.items.length > 1)) && (
+                    <View style={styles.bundleBadge}>
+                      <Ionicons name="layers" size={10} color={ASU.white} style={{ marginRight: 4 }} />
+                      <Text style={styles.bundleBadgeText}>Bundle</Text>
+                    </View>
+                  )}
+                  {offer.status === 'pending' && (
+                    <View style={styles.pendingBadge}>
+                      <Text style={styles.pendingText}>Pending</Text>
+                    </View>
+                  )}
+                  {offer.status === 'accepted' && (
+                    <View style={styles.acceptedBadge}>
+                      <Text style={styles.acceptedText}>Accepted</Text>
+                    </View>
+                  )}
+                  {offer.status === 'rejected' && (
+                    <View style={styles.rejectedBadge}>
+                      <Text style={styles.rejectedText}>Rejected</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.offerAmountSection}>
+                <View>
+                  <Text style={styles.offerAmountLabel}>Offer Amount</Text>
+                  <Text style={styles.offerAmount}>${offer.offerAmount}</Text>
+                </View>
+                {(offer.isBundle || (offer.items && offer.items.length > 1)) && (
+                  <View style={styles.bundlePriceContainer}>
+                     <Text style={styles.bundleOriginalLabel}>Bundle Value</Text>
+                     <Text style={styles.bundleOriginalPrice}>
+                       ${getOriginalTotal(offer)}
+                     </Text>
                   </View>
                 )}
               </View>
 
-              <View style={styles.offerAmountSection}>
-                <Text style={styles.offerAmountLabel}>Offer Amount</Text>
-                <Text style={styles.offerAmount}>${offer.offerAmount}</Text>
-              </View>
+              {(offer.isBundle || (offer.items && offer.items.length > 1)) && (
+                <View style={styles.bundleItemsContainer}>
+                  <Text style={styles.bundleItemsTitle}>Items in this bundle:</Text>
+                  {offer.items.map((item, index) => (
+                    <View key={index} style={styles.bundleItemRow}>
+                      <Ionicons name="ellipse" size={6} color={theme.textSecondary} style={{ marginTop: 6, marginRight: 8 }} />
+                      <Text style={styles.bundleItemText} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      {item.price && (
+                        <Text style={styles.bundleItemPrice}>${item.price}</Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
 
               {offer.message && (
                 <View style={styles.messageSection}>
@@ -457,6 +492,9 @@ const getStyles = (theme) => StyleSheet.create({
     borderBottomColor: theme.border,
     paddingVertical: 12,
     marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   offerAmountLabel: {
     fontSize: 13,
@@ -467,6 +505,65 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: ASU.maroon,
+  },
+  statusContainer: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  bundleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: ASU.maroon,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  bundleBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: ASU.white,
+  },
+  bundlePriceContainer: {
+    alignItems: 'flex-end',
+  },
+  bundleOriginalLabel: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    marginBottom: 2,
+  },
+  bundleOriginalPrice: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.textSecondary,
+    textDecorationLine: 'line-through',
+  },
+  bundleItemsContainer: {
+    backgroundColor: theme.background,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  bundleItemsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.textSecondary,
+    marginBottom: 8,
+  },
+  bundleItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  bundleItemText: {
+    flex: 1,
+    fontSize: 14,
+    color: theme.text,
+    marginRight: 8,
+  },
+  bundleItemPrice: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    fontWeight: '500',
   },
   messageSection: {
     marginBottom: 12,
