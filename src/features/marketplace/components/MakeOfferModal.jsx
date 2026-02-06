@@ -31,6 +31,7 @@ export default function MakeOfferModal({
   sellerListings = [],
   initialSelectedIds = [],
   onSubmit,
+  onSuccess,
 }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -127,6 +128,11 @@ export default function MakeOfferModal({
       });
       
       onClose();
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+
       // Redirect to Chat Screen
       router.push({
         pathname: '/chat',

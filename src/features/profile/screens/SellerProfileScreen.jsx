@@ -28,7 +28,7 @@ export default function SellerProfileScreen() {
   const sellerId = params.sellerId || '';
   const sellerName = params.sellerName || 'ASU Student';
   const livingCommunity = params.livingCommunity || '';
-  const autoSelectId = params.autoSelectId ? parseInt(params.autoSelectId, 10) : null;
+  const autoSelectId = params.autoSelectId || null;
   const initialMode = params.initialMode === 'selection';
 
   // Selection State
@@ -93,21 +93,17 @@ export default function SellerProfileScreen() {
     setSelectedIds([]);
   };
 
-  // Handle Submit Offer
+  // Handle Submit Offer (Legacy/Unused by Modal currently)
   const handleOfferSubmit = (offerData) => {
     console.log('Bundle Offer Submitted:', offerData);
     setOfferModalVisible(false);
     setIsSelectionMode(false);
     setSelectedIds([]);
-    
-    // Navigate to chat or show success
-    router.push({
-      pathname: '/chat',
-      params: {
-        sellerId,
-        offerData: JSON.stringify(offerData),
-      },
-    });
+  };
+
+  const handleOfferSuccess = () => {
+    setIsSelectionMode(false);
+    setSelectedIds([]);
   };
 
   // Calculate total of selected items
@@ -226,6 +222,7 @@ export default function SellerProfileScreen() {
           sellerListings={sellerListings}
           initialSelectedIds={selectedIds}
           onSubmit={handleOfferSubmit}
+          onSuccess={handleOfferSuccess}
         />
       )}
     </SafeAreaView>

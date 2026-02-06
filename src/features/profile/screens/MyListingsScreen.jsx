@@ -8,6 +8,7 @@ import {
   Image,
   Platform,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,10 +24,11 @@ export default function MyListingsScreen() {
   const theme = getTheme(isDarkMode);
   const [listings, setListings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const styles = getStyles(theme);
 
-  const fetchMyListings = useCallback(async () => {
-    setIsLoading(true);
+  const fetchMyListings = useCallback(async (shouldSetLoading = true) => {
+    if (shouldSetLoading) setIsLoading(true);
     try {
       const currentUser = await listingService.userService.getCurrentUser();
       const data = await listingService.getMyListings(currentUser.uid);
@@ -34,9 +36,15 @@ export default function MyListingsScreen() {
     } catch (error) {
       console.error('Failed to fetch my listings:', error);
     } finally {
-      setIsLoading(false);
+      if (shouldSetLoading) setIsLoading(false);
     }
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchMyListings(false);
+    setRefreshing(false);
+  }, [fetchMyListings]);
 
   useFocusEffect(
     useCallback(() => {
@@ -95,6 +103,9 @@ export default function MyListingsScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 20 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+        }
       >
         {isLoading ? (
           <View style={styles.loadingContainer}>
