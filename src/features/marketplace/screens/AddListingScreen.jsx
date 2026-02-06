@@ -80,6 +80,7 @@ export default function AddListingScreen({ isTab = false }) {
   const [isUrgent, setIsUrgent] = useState(editingListing?.urgent || false);
   const [eventDate, setEventDate] = useState(editingListing?.eventDate || '');
   const [venue, setVenue] = useState(editingListing?.venue || '');
+  const [selectedCoverIndex, setSelectedCoverIndex] = useState(0);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
   const [brandPickerVisible, setBrandPickerVisible] = useState(false);
@@ -116,7 +117,20 @@ export default function AddListingScreen({ isTab = false }) {
       setIsUrgent(editingListing.urgent || false);
       setEventDate(editingListing.eventDate || '');
       setVenue(editingListing.venue || '');
-      setImages(editingListing.images || []);
+
+      if (editingListing.images && editingListing.images.length > 0) {
+        setImages(editingListing.images);
+        if (editingListing.coverImage) {
+          const idx = editingListing.images.findIndex(img => {
+            const imgUri = typeof img === 'string' ? img : (img.thumbnail?.uri || img.originalUri);
+            const coverUri = typeof editingListing.coverImage === 'string' ? editingListing.coverImage : (editingListing.coverImage.thumbnail?.uri || editingListing.coverImage.originalUri);
+            return imgUri === coverUri;
+          });
+          if (idx !== -1) setSelectedCoverIndex(idx);
+        }
+      } else {
+        setImages([]);
+      }
     } else if (params.initialCategory) {
       setSelectedCategory(params.initialCategory);
     }
@@ -207,6 +221,11 @@ export default function AddListingScreen({ isTab = false }) {
 
   const removeImage = (index) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
+    if (index === selectedCoverIndex) {
+      setSelectedCoverIndex(0);
+    } else if (index < selectedCoverIndex) {
+      setSelectedCoverIndex((prev) => prev - 1);
+    }
   };
 
   const getDisplayUri = (image) => {
@@ -219,6 +238,8 @@ export default function AddListingScreen({ isTab = false }) {
     const image = images[index];
     const isEmpty = !image;
     const displayUri = getDisplayUri(image);
+    const isCover = index === selectedCoverIndex;
+
     return (
       <View key={index} style={styles.imageTile}>
         {isEmpty ? (
@@ -235,8 +256,16 @@ export default function AddListingScreen({ isTab = false }) {
             )}
           </TouchableOpacity>
         ) : (
-          <View style={styles.imageContainer}>
-            <Image source={{ uri: displayUri }} style={styles.image} resizeMode="cover" />
+          <TouchableOpacity 
+            style={styles.imageContainer}
+            onPress={() => setSelectedCoverIndex(index)}
+            activeOpacity={0.9}
+          >
+            <Image 
+              source={{ uri: displayUri }} 
+              style={[styles.image, isCover && styles.coverImageBorder]} 
+              resizeMode="cover" 
+            />
             <TouchableOpacity
               style={[styles.removeButton, { backgroundColor: ASU.maroon }]}
               onPress={() => removeImage(index)}
@@ -244,7 +273,13 @@ export default function AddListingScreen({ isTab = false }) {
             >
               <Ionicons name="close" size={18} color={ASU.white} />
             </TouchableOpacity>
-          </View>
+            
+            {isCover && (
+              <View style={styles.coverBadge}>
+                <Text style={styles.coverBadgeText}>Cover</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         )}
       </View>
     );
@@ -259,6 +294,15 @@ export default function AddListingScreen({ isTab = false }) {
     setIsSubmitting(true);
 
     try {
+      const coverImg = images[selectedCoverIndex] || images[0];
+      let orderedImages = [...images];
+      
+      // Ensure cover image is first in the array for compatibility with other views
+      if (selectedCoverIndex > 0 && coverImg) {
+        orderedImages.splice(selectedCoverIndex, 1);
+        orderedImages.unshift(coverImg);
+      }
+
       const listingData = {
         title,
         description,
@@ -272,7 +316,8 @@ export default function AddListingScreen({ isTab = false }) {
         urgent: isUrgent,
         eventDate,
         venue,
-        images,
+        images: orderedImages,
+        coverImage: coverImg,
       };
 
       if (isEditing) {
@@ -862,6 +907,26 @@ const getStyles = (theme, insets) => StyleSheet.create({
   submitButtonText: {
     color: ASU.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+  },
+  coverBadge: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: ASU.maroon,
+    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coverBadgeText: {
+    color: ASU.white,
+    fontSize: 10,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  },
+  coverImageBorder: {
+    borderWidth: 3,
+    borderColor: ASU.maroon,
   },
 });
