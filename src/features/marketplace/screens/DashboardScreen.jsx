@@ -30,6 +30,16 @@ const CATEGORY_ICONS = {
 
 const PAGE_SIZE = 10;
 
+const LIVING_COMMUNITIES = [
+  { id: 'hyve', label: 'The Hyve' },
+  { id: 'paseo', label: 'Paseo on University' },
+  { id: 'skye', label: 'Skye at McClintock' },
+  { id: 'tooker', label: 'Tooker' },
+  { id: 'villas', label: 'The Villas on Apache' },
+  { id: 'union', label: 'Union Tempe' },
+  { id: 'district', label: 'The District on Apache' },
+];
+
 import { useFilters } from '../../../context/FilterContext';
 
 export default function DashboardScreen() {
@@ -37,7 +47,7 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
-  const { selectedLivingCommunities } = useFilters();
+  const { selectedLivingCommunities, setSelectedLivingCommunities } = useFilters();
   const headerHeight = Platform.OS === 'ios' ? 44 : 56;
   const topPadding = insets.top + headerHeight + 8;
 
@@ -71,6 +81,10 @@ export default function DashboardScreen() {
     setIsSearching(false);
   };
 
+  const removeFilter = (id) => {
+    setSelectedLivingCommunities(prev => prev.filter(c => c !== id));
+  };
+
   const fetchListings = useCallback(async (reset = false) => {
     if (loadingMore) return;
     
@@ -96,16 +110,6 @@ export default function DashboardScreen() {
       let filteredData = data;
       // Apply client-side filtering for living communities
       if (selectedLivingCommunities.length > 0) {
-        const LIVING_COMMUNITIES = [
-          { id: 'hyve', label: 'The Hyve' },
-          { id: 'paseo', label: 'Paseo on University' },
-          { id: 'skye', label: 'Skye at McClintock' },
-          { id: 'tooker', label: 'Tooker' },
-          { id: 'villas', label: 'The Villas on Apache' },
-          { id: 'union', label: 'Union Tempe' },
-          { id: 'district', label: 'The District on Apache' },
-        ];
-        
         filteredData = data.filter(item => {
           if (!item.livingCommunity) return false;
           // Find the ID for the item's living community label
@@ -257,11 +261,16 @@ export default function DashboardScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={styles.iconButton}
+            style={[styles.iconButton, selectedLivingCommunities.length > 0 && styles.iconButtonActive]}
             onPress={() => router.push('/filters')}
             activeOpacity={0.7}
           >
-            <Ionicons name="options-outline" size={20} color={theme.text} />
+            <Ionicons name="options-outline" size={20} color={selectedLivingCommunities.length > 0 ? ASU.white : theme.text} />
+            {selectedLivingCommunities.length > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{selectedLivingCommunities.length}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -495,6 +504,24 @@ const getStyles = (theme, bottomInset) => StyleSheet.create({
     paddingBottom: 16,
     backgroundColor: theme.background,
     zIndex: 10,
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: ASU.white,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: theme.background,
+  },
+  badgeText: {
+    color: ASU.maroon,
+    fontSize: 10,
+    fontWeight: '800',
   },
   searchRow: {
     flexDirection: 'row',
