@@ -103,7 +103,8 @@ export default function NotificationsScreen() {
           listing: JSON.stringify({
             id: n.listingId,
             title: n.listingTitle || 'Listing',
-            price: n.productPrice ?? 0,
+            price: n.listingPrice || n.productPrice || 0,
+            image: n.listingImage,
             sold: false,
           }),
         },
