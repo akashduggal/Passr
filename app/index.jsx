@@ -4,6 +4,7 @@ import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '../src/services/firebaseAuth';
 import UserService from '../src/services/UserService';
+import { useWishlist } from '../src/context/WishlistContext';
 import { ENABLE_ONBOARDING } from '../src/constants/featureFlags';
 
 export default function Index() {
@@ -11,6 +12,7 @@ export default function Index() {
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [user, setUser] = useState(null);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+  const { loadWishlist } = useWishlist();
 
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -47,6 +49,12 @@ export default function Index() {
         try {
           // Verify backend connectivity and session validity
           await UserService.getCurrentUser();
+          
+          // Now that backend is verified, load wishlist
+          // We don't await this because we don't want to block the UI transition if it's slow,
+          // but it's safe to fire it now.
+          loadWishlist();
+
           setUser(user);
         } catch (error) {
           console.error('Backend validation failed during boot:', error);

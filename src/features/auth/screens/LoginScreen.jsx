@@ -21,6 +21,7 @@ import { GoogleSignin, statusCodes } from '../../../services/googleSignin';
 import auth from '../../../services/firebaseAuth';
 import UserService from '../../../services/UserService';
 import { registerForPushNotificationsAsync } from '../../../services/PushNotificationService';
+import { useWishlist } from '../../../context/WishlistContext';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 import { RESTRICT_TO_ASU_EMAIL } from '../../../constants/featureFlags';
@@ -35,6 +36,7 @@ export default function LoginScreen() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [tempUrl, setTempUrl] = useState('');
   const styles = getStyles(theme, isDarkMode);
+  const { loadWishlist } = useWishlist();
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -75,6 +77,9 @@ export default function LoginScreen() {
         picture: user.photo,
         expoPushToken,
       });
+
+      // Load wishlist now that user is synced
+      loadWishlist();
 
       // Keep loading state true while navigating
       router.replace('/dashboard');

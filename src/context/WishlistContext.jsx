@@ -17,9 +17,7 @@ export function WishlistProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      loadWishlist();
-    } else {
+    if (!user) {
       setWishlistItems([]);
       setIsLoading(false);
     }
@@ -27,6 +25,7 @@ export function WishlistProvider({ children }) {
 
   const loadWishlist = async () => {
     try {
+      if (!user) return;
       setIsLoading(true);
       const items = await wishlistService.getWishlist();
       setWishlistItems(items);
@@ -90,6 +89,7 @@ export function WishlistProvider({ children }) {
       value={{
         wishlistItems,
         isLoading,
+        loadWishlist,
         addToWishlist,
         removeFromWishlist,
         isInWishlist,
