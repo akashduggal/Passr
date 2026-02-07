@@ -13,7 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
@@ -40,7 +40,8 @@ export default function MyOffersScreen() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
-  const styles = getStyles(theme);
+  const insets = useSafeAreaInsets();
+  const styles = getStyles(theme, insets);
 
   const [activeTab, setActiveTab] = useState('active'); // active, history
   const [activeFilter, setActiveFilter] = useState('All'); // All, Single, Bundle
@@ -349,6 +350,7 @@ export default function MyOffersScreen() {
         transparent
         animationType="slide"
         onRequestClose={closeBundleModal}
+        statusBarTranslucent={true}
       >
         <TouchableOpacity 
           style={styles.modalOverlay} 
@@ -436,7 +438,7 @@ export default function MyOffersScreen() {
   );
 }
 
-const getStyles = (theme) => StyleSheet.create({
+const getStyles = (theme, insets) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
@@ -757,7 +759,7 @@ const getStyles = (theme) => StyleSheet.create({
   },
   modalFooter: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: Platform.OS === 'ios' ? 40 : Math.max(20, insets.bottom + 20),
     borderTopWidth: 1,
     borderTopColor: theme.border,
     backgroundColor: theme.surface,

@@ -175,10 +175,11 @@ export default function MyProfileScreen() {
 
       {/* Modern Logout Modal */}
       <Modal
-        animationType="fade"
+        animationType="slide"
         transparent={true}
         visible={showLogoutModal}
         onRequestClose={() => setShowLogoutModal(false)}
+        statusBarTranslucent={true}
       >
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback onPress={() => setShowLogoutModal(false)}>
@@ -419,7 +420,8 @@ const getStyles = (theme, insets) => StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : Math.max(24, insets.bottom + 16),
+    width: '100%',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

@@ -29,6 +29,7 @@ export default function ProductPreviewModal({
       animationType="fade"
       transparent={true}
       onRequestClose={onClose}
+      statusBarTranslucent={true}
     >
       <View style={styles.previewOverlay}>
         <View style={styles.previewContainer}>

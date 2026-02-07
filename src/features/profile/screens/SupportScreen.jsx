@@ -307,6 +307,7 @@ export default function SupportScreen() {
         transparent
         animationType="slide"
         onRequestClose={closeNewIssueModal}
+        statusBarTranslucent={true}
       >
         <Pressable style={styles.modalOverlay} onPress={closeNewIssueModal}>
           <KeyboardAvoidingView
@@ -393,7 +394,7 @@ export default function SupportScreen() {
   );
 }
 
-const getStyles = (theme) =>
+const getStyles = (theme, insets) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -585,6 +586,7 @@ const getStyles = (theme) =>
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
       height: '85%',
+      width: '100%',
       shadowColor: '#000',
       shadowOffset: { width: 0, height: -2 },
       shadowOpacity: 0.1,
@@ -609,7 +611,7 @@ const getStyles = (theme) =>
     },
     newIssueModalScrollContent: {
       padding: 24,
-      paddingBottom: 40,
+      paddingBottom: Platform.OS === 'ios' ? 40 : Math.max(24, insets.bottom + 24),
     },
     fieldLabel: {
       fontSize: 15,

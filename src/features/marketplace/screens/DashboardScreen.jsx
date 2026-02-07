@@ -278,6 +278,7 @@ export default function DashboardScreen() {
         transparent
         animationType="fade"
         onRequestClose={() => setSortModalVisible(false)}
+        statusBarTranslucent={true}
       >
         <Pressable style={styles.sortModalOverlay} onPress={() => setSortModalVisible(false)}>
           <TouchableOpacity

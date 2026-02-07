@@ -469,6 +469,7 @@ export default function ProductDetailScreen() {
         transparent={true}
         animationType="fade"
         onRequestClose={closeFullScreenImage}
+        statusBarTranslucent={true}
       >
         <View style={styles.fullScreenContainer}>
           <TouchableOpacity

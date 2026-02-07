@@ -64,7 +64,7 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
-  const styles = getStyles(theme);
+  const styles = getStyles(theme, insets);
 
   const [offerDetails, setOfferDetails] = useState(null);
   const [listing, setListing] = useState(null);
@@ -1039,6 +1039,7 @@ export default function ChatScreen() {
         transparent
         animationType="slide"
         onRequestClose={closeScheduleModal}
+        statusBarTranslucent={true}
       >
         <KeyboardAvoidingView
           style={styles.scheduleModalWrapper}
@@ -1230,7 +1231,7 @@ export default function ChatScreen() {
   );
 }
 
-const getStyles = (theme) => StyleSheet.create({
+const getStyles = (theme, insets) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
@@ -1242,7 +1243,8 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: Platform.OS === 'ios' ? insets.top + 12 : insets.top + 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
     backgroundColor: theme.background,
@@ -1483,6 +1485,7 @@ const getStyles = (theme) => StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 10,
+    paddingBottom: insets.bottom,
   },
   scheduleModalScrollContent: {
     padding: 24,

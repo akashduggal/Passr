@@ -184,6 +184,7 @@ export default function MakeOfferModal({
       animationType="slide"
       transparent={true}
       onRequestClose={onClose}
+      statusBarTranslucent={true}
     >
       <View style={styles.overlay}>
         <KeyboardAvoidingView

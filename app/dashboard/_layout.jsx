@@ -130,7 +130,7 @@ export default function DashboardLayout() {
           borderTopColor: theme.border,
           height: Platform.OS === 'ios' ? 75 : 40 + insets.bottom,
           paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8 + insets.bottom,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 48 + insets.bottom,
           shadowColor: "#000",
           shadowOffset: {
             width: 0,

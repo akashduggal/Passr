@@ -178,6 +178,7 @@ export default function LoginScreen() {
             transparent={true}
             visible={settingsVisible}
             onRequestClose={() => setSettingsVisible(false)}
+            statusBarTranslucent={true}
           >
             <View style={styles.centeredView}>
               <View style={[styles.modalView, { backgroundColor: theme.surface }]}>
