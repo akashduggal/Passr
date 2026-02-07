@@ -1202,7 +1202,7 @@ const getStyles = (theme, insets) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? insets.top + 12 : insets.top + 12,
+    paddingTop: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
