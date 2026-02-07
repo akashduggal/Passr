@@ -17,6 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { useWishlist } from '../../../context/WishlistContext';
+import { useToast } from '../../../context/ToastContext';
 import { getTheme, ASU } from '../../../theme';
 import { ENABLE_TICKETS } from '../../../constants/featureFlags';
 import { CURRENT_USER_ID, getSellerName } from '../../../constants/currentUser';
@@ -69,6 +70,7 @@ export default function ProductDetailScreen() {
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme);
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { showToast } = useToast();
   const headerHeight = Platform.OS === 'ios' ? 44 : 56;
   const topPadding = insets.top + headerHeight;
 
@@ -432,7 +434,15 @@ export default function ProductDetailScreen() {
           {showWishlist && (
             <TouchableOpacity
               style={styles.wishlistButton}
-              onPress={() => toggleWishlist(product)}
+              onPress={async () => {
+                const isCurrentlyInWishlist = isInWishlist(product.id);
+                await toggleWishlist(product);
+                if (isCurrentlyInWishlist) {
+                  showToast('Removed from wishlist', 'info');
+                } else {
+                  showToast('Added to wishlist', 'success');
+                }
+              }}
               activeOpacity={0.7}
             >
               <Ionicons 

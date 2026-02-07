@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications';
 import { FilterProvider } from '../src/context/FilterContext';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { WishlistProvider } from '../src/context/WishlistContext';
+import { ToastProvider } from '../src/context/ToastContext';
 import { NotificationProvider } from '../src/context/NotificationContext';
 import AppSplashScreen from '../src/components/AppSplashScreen';
 
@@ -151,7 +152,8 @@ export default function Layout() {
       <NotificationProvider>
         <FilterProvider>
           <WishlistProvider>
-            <View style={{ flex: 1 }}>
+            <ToastProvider>
+              <View style={{ flex: 1 }}>
             <Stack
             screenOptions={{
               headerBackTitleVisible: false,
@@ -235,9 +237,10 @@ export default function Layout() {
             </Animated.View>
           )}
         </View>
-      </WishlistProvider>
-      </FilterProvider>
-    </NotificationProvider>
+            </ToastProvider>
+          </WishlistProvider>
+        </FilterProvider>
+      </NotificationProvider>
   </ThemeProvider>
   );
 }
