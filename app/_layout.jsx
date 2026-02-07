@@ -183,8 +183,8 @@ export default function Layout() {
             <Stack.Screen
               name="profile"
               options={{
-                headerShown: true,
-                title: '', // Title will be set by child screens
+                headerShown: false, // Hide root header, let profile stack handle it
+                title: '',
                 headerBackButtonDisplayMode: 'minimal',
                 headerTransparent: true
               }}

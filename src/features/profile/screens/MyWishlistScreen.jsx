@@ -16,7 +16,7 @@ export default function MyWishlistScreen() {
   
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.emptyContainer} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.emptyContainer} edges={['bottom']}>
         <View style={{ transform: [{ scale: 1.5 }] }}>
           {/* Use a simple ActivityIndicator or similar if available, or just Text for now */}
           <Text style={{ color: theme.text }}>Loading...</Text>
@@ -27,7 +27,7 @@ export default function MyWishlistScreen() {
 
   if (wishlistItems.length === 0) {
     return (
-      <SafeAreaView style={styles.emptyContainer} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.emptyContainer} edges={['bottom']}>
         <View style={styles.iconCircle}>
           <Ionicons name="heart-outline" size={64} color={theme.textSecondary} />
         </View>
@@ -46,8 +46,8 @@ export default function MyWishlistScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 16 }]}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.productsGrid}>
           {wishlistItems.map((item) => (
             <ProductTile key={item.id} product={item} />

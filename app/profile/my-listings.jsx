@@ -4,7 +4,6 @@ import MyListingsScreen from '../../src/features/profile/screens/MyListingsScree
 export default function MyListingsRoute() {
   return (
     <>
-      <Stack.Screen options={{ title: 'My Listings' }} />
       <MyListingsScreen />
     </>
   );

@@ -296,9 +296,9 @@ export default function MyOffersScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={{ paddingTop: (Platform.OS === 'ios' ? 44 : 56) }}>
-        {/* Status Tabs (Active / History) */}
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <View style={styles.headerContainer}>
+        {/* Tabs */}
         <View style={styles.tabsContainer}>
           <TouchableOpacity 
             style={[styles.tabButton, activeTab === 'active' && styles.tabButtonActive]}

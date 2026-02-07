@@ -11,22 +11,30 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 import ProductTile from '../../../components/ProductTile';
 import { listingService } from '../../../services/ListingService';
+import { useEffect } from 'react';
 
 export default function MyListingsScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const [listings, setListings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const styles = getStyles(theme);
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: `My Listings ${listings.length > 0 ? `(${listings.length})` : ''}`,
+    });
+  }, [navigation, listings]);
 
   const fetchMyListings = useCallback(async (shouldSetLoading = true) => {
     if (shouldSetLoading) setIsLoading(true);
@@ -72,10 +80,10 @@ export default function MyListingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 20 }]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />

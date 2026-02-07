@@ -48,10 +48,10 @@ export default function FaqScreen() {
   const styles = getStyles(theme);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight + 16 }]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Header Section */}
