@@ -128,7 +128,7 @@ export default function DashboardLayout() {
         tabBarStyle: {
           backgroundColor: theme.surface,
           borderTopColor: theme.border,
-          height: Platform.OS === 'ios' ? 85 : 60 + insets.bottom,
+          height: Platform.OS === 'ios' ? 75 : 40 + insets.bottom,
           paddingTop: 8,
           paddingBottom: Platform.OS === 'ios' ? 28 : 8 + insets.bottom,
           shadowColor: "#000",
@@ -179,15 +179,33 @@ export default function DashboardLayout() {
      <Tabs.Screen
         name="add-listing"
         options={{
-          title: 'Listing',
+          title: 'New Listing',
           tabBarLabel: '',
           headerTransparent: true,
           tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons 
-              name={focused ? "add-circle" : "add-circle-outline"} 
-              size={size + 4} 
-              color={color} 
-            />
+            <View style={{
+              position: 'absolute',
+              bottom: 10,
+              height: 60,
+              width: 60,
+              borderRadius: 30,
+              backgroundColor: focused ? theme.primary : theme.surface,
+              justifyContent: 'center',
+              alignItems: 'center',
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
+              elevation: 5,
+              borderWidth: 4,
+              borderColor: theme.surface
+            }}>
+              <Ionicons 
+                name={focused ? "add" : "add-outline"} 
+                size={32} 
+                color={focused ? '#fff' : color} 
+              />
+            </View>
           )
         }}
       />
