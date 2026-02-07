@@ -94,6 +94,24 @@ class ListingService {
   }
 
   /**
+   * Manually expire a listing (Test Only)
+   */
+  async expireListing(id) {
+    try {
+      const headers = await userService.getHeaders();
+      const response = await fetch(`${userService.baseUrl}/api/listings/${id}/expire`, {
+        method: 'PATCH',
+        headers
+      });
+      
+      return await userService.handleResponse(response);
+    } catch (error) {
+      console.error('ListingService.expireListing error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete a listing
    */
   async deleteListing(id) {

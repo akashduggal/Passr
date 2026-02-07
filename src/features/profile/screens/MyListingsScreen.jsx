@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -97,6 +98,30 @@ export default function MyListingsScreen() {
     }
   };
 
+  const handleExpireListing = (listing) => {
+    Alert.alert(
+      "Expire Listing (Test)",
+      "This will set the listing to expire immediately. The background cleanup job will delete it shortly.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Expire Now", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await listingService.expireListing(listing.id);
+              // Refresh to show updated state
+              fetchMyListings();
+            } catch (error) {
+              console.error("Failed to expire listing", error);
+              Alert.alert("Error", "Failed to expire listing");
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView
@@ -174,6 +199,18 @@ export default function MyListingsScreen() {
                     >
                       <Ionicons name="refresh-outline" size={16} color={theme.text} />
                       <Text style={[styles.relistText, { color: theme.text }]}>Mark as Available</Text>
+                    </TouchableOpacity>
+                  )}
+                  
+                  {/* Test Feature: Manual Expire */}
+                  {!listing.sold && (
+                    <TouchableOpacity
+                      style={[styles.relistButton, { borderColor: ASU.orange }]}
+                      onPress={() => handleExpireListing(listing)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="time-outline" size={16} color={ASU.orange} />
+                      <Text style={[styles.relistText, { color: ASU.orange }]}>Expire Now (Test)</Text>
                     </TouchableOpacity>
                   )}
                 </View>

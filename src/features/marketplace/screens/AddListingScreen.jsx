@@ -790,7 +790,35 @@ export default function AddListingScreen({ isTab = false }) {
             </Text>
           )}
         </TouchableOpacity>
+        <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Sticky Footer Button - ONLY for Editing */}
+      {isEditing && (
+        <View style={[
+          styles.footerContainer, 
+          { 
+            backgroundColor: theme.surface, 
+            borderTopColor: theme.border,
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 16
+          }
+        ]}>
+          <TouchableOpacity
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled, { marginTop: 0, marginBottom: 0 }]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+            activeOpacity={0.8}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.submitButtonText}>
+                Update Listing
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -1055,6 +1083,20 @@ const getStyles = (theme, insets) => StyleSheet.create({
   },
   selectedOptionText: {
     fontWeight: '700',
+  },
+  footerContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   submitButton: {
     backgroundColor: ASU.maroon,
