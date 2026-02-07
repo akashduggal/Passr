@@ -11,6 +11,7 @@ import {
   Modal,
   Pressable,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -100,8 +101,40 @@ export default function ChatScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showScheduleErrors, setShowScheduleErrors] = useState(false);
   const [scheduleTimePastWarning, setScheduleTimePastWarning] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const currentUser = auth().currentUser;
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Refresh messages if we have a chat ID
+      if (chatId) {
+        const msgs = await chatService.getMessages(chatId);
+        msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        setMessages(msgs.map(m => ({
+            id: m._id,
+            text: m.text,
+            type: m.type || 'text',
+            schedule: m.schedule || null,
+            sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+            timestamp: new Date(m.createdAt),
+        })));
+      }
+      
+      // Refresh offer status
+      if (params.offerId) {
+          const offer = await offerService.getOfferById(params.offerId);
+          if (offer && offer.status === 'accepted') {
+            setOfferAccepted(true);
+          }
+      }
+    } catch (error) {
+      console.error("Refresh error:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     const initChat = async () => {
@@ -569,6 +602,14 @@ export default function ChatScreen() {
           style={styles.messagesContainer}
           contentContainerStyle={styles.messagesContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh} 
+              tintColor={ASU.maroon} 
+              colors={[ASU.maroon]} // Android
+            />
+          }
         >
           {showPendingOverlay && (
             <View style={styles.pendingOverlay}>
