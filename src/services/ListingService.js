@@ -56,6 +56,24 @@ class ListingService {
   }
 
   /**
+   * Get a single listing by ID
+   */
+  async getListingById(id) {
+    try {
+      const headers = await userService.getHeaders();
+      const response = await fetch(`${userService.baseUrl}/api/listings/${id}`, {
+        method: 'GET',
+        headers
+      });
+      
+      return await userService.handleResponse(response);
+    } catch (error) {
+      console.error('ListingService.getListingById error:', error);
+      return null;
+    }
+  }
+
+  /**
    * Create a new listing
    */
   async addListing(listing) {
@@ -89,6 +107,22 @@ class ListingService {
       return await userService.handleResponse(response);
     } catch (error) {
       console.error('ListingService.updateListing error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark a listing as sold to a specific user
+   */
+  async markAsSold(listingId, soldToUserId) {
+    try {
+      return await this.updateListing({
+        id: listingId,
+        sold: true,
+        soldToUserId: soldToUserId
+      });
+    } catch (error) {
+      console.error('ListingService.markAsSold error:', error);
       throw error;
     }
   }

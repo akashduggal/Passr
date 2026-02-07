@@ -51,6 +51,7 @@ function getDateOptionLabel(d, todayStart) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+import { listingService } from '../../../services/ListingService';
 import { chatService } from '../../../services/ChatService';
 import { offerService } from '../../../services/OfferService';
 import { addNotificationListeners, setActiveChatId } from '../../../services/PushNotificationService';
@@ -66,6 +67,7 @@ export default function ChatScreen() {
   const styles = getStyles(theme);
 
   const [offerDetails, setOfferDetails] = useState(null);
+  const [listing, setListing] = useState(null);
   const [isLoadingOffer, setIsLoadingOffer] = useState(!!params.offerId);
   const currentUser = auth().currentUser;
 
@@ -307,6 +309,42 @@ export default function ChatScreen() {
   };
 
 
+
+  // Fetch listing details
+  useEffect(() => {
+    if (listingId) {
+        listingService.getListingById(listingId).then(setListing);
+    }
+  }, [listingId, refreshing]);
+
+  const handleMarkAsSold = async () => {
+    Alert.alert(
+        "Mark as Sold",
+        `Are you sure you want to mark this item as sold to ${buyerName}?`,
+        [
+            { text: "Cancel", style: "cancel" },
+            { 
+                text: "Yes, Sold", 
+                onPress: async () => {
+                    try {
+                        const targetUserId = isSeller ? (offerDetails?.buyerId || params.buyerId) : null;
+                        if (!targetUserId) {
+                            Alert.alert("Error", "Could not determine buyer ID");
+                            return;
+                        }
+                        
+                        await listingService.markAsSold(listingId, targetUserId);
+                        setListing(prev => ({ ...prev, sold: true, soldToUserId: targetUserId }));
+                        Alert.alert("Success", "Item marked as sold!");
+                    } catch (error) {
+                        console.error("Mark as sold error", error);
+                        Alert.alert("Error", "Failed to mark as sold");
+                    }
+                }
+            }
+        ]
+    );
+  };
 
   const handleAcceptOffer = async () => {
     try {
@@ -658,24 +696,45 @@ export default function ChatScreen() {
         </View>
 
         {isSeller && (
-            <View style={{ flexDirection: 'row', padding: 12 }}>
-                {!offerAccepted && (
+            <View style={{ padding: 12 }}>
+                <View style={{ flexDirection: 'row' }}>
+                    {!offerAccepted && (
+                        <TouchableOpacity 
+                            style={[styles.acceptButton, { flex: 1, marginRight: 6, margin: 0 }]} 
+                            onPress={handleAcceptOffer}
+                        >
+                            <Text style={styles.acceptButtonText}>Accept Offer</Text>
+                        </TouchableOpacity>
+                    )}
+                    
                     <TouchableOpacity 
-                        style={[styles.acceptButton, { flex: 1, marginRight: 6, margin: 0 }]} 
-                        onPress={handleAcceptOffer}
+                        style={[styles.acceptButton, { backgroundColor: ASU.maroon, flex: 1, marginLeft: !offerAccepted ? 6 : 0, margin: 0 }]} 
+                        onPress={handleRejectOffer}
                     >
-                        <Text style={styles.acceptButtonText}>Accept Offer</Text>
+                        <Text style={[styles.acceptButtonText, { color: ASU.white }]}>
+                            {offerAccepted ? "Reject Offer" : "Reject"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                {offerAccepted && listing && !listing.sold && (
+                    <TouchableOpacity 
+                        style={[styles.acceptButton, { backgroundColor: ASU.gold, margin: 0, marginTop: 10 }]}
+                        onPress={handleMarkAsSold}
+                    >
+                        <Text style={[styles.acceptButtonText, { color: ASU.black }]}>Mark as Sold to {buyerName}</Text>
                     </TouchableOpacity>
                 )}
                 
-                <TouchableOpacity 
-                    style={[styles.acceptButton, { backgroundColor: ASU.maroon, flex: 1, marginLeft: !offerAccepted ? 6 : 0, margin: 0 }]} 
-                    onPress={handleRejectOffer}
-                >
-                    <Text style={[styles.acceptButtonText, { color: ASU.white }]}>
-                        {offerAccepted ? "Reject Offer" : "Reject"}
-                    </Text>
-                </TouchableOpacity>
+                {listing && listing.sold && (
+                     <View style={{ backgroundColor: '#e0e0e0', padding: 10, borderRadius: 8, alignItems: 'center', marginTop: 10 }}>
+                        <Text style={{ fontWeight: 'bold', color: '#555' }}>
+                            {listing.soldToUserId === (offerDetails?.buyerId || params.buyerId) 
+                                ? `Sold to ${buyerName}!` 
+                                : 'Sold to another user'}
+                        </Text>
+                     </View>
+                )}
             </View>
         )}
 
@@ -904,6 +963,18 @@ export default function ChatScreen() {
                        <View style={{ backgroundColor: theme.surface, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: theme.border }}>
                            <Text style={{ color: '#C62828', fontSize: 12, fontWeight: '500' }}>
                                ❌ Pickup declined by buyer
+                           </Text>
+                       </View>
+                   </View>
+               );
+           }
+
+           if (message.type === 'item_sold') {
+               return (
+                   <View key={message.id} style={{ alignItems: 'center', marginVertical: 12 }}>
+                       <View style={{ backgroundColor: ASU.gold, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#FFC107' }}>
+                           <Text style={{ color: ASU.black, fontSize: 14, fontWeight: 'bold' }}>
+                               {message.text}
                            </Text>
                        </View>
                    </View>
