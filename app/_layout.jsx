@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { Stack, useRouter, useRootNavigationState } from 'expo-router';
+import { Stack, useRouter, useRootNavigationState, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { FilterProvider } from '../src/context/FilterContext';
@@ -15,6 +15,12 @@ SplashScreen.preventAutoHideAsync();
 function useNotificationObserver() {
   const router = useRouter();
   const navigationState = useRootNavigationState();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   useEffect(() => {
     // Wait for the navigation to be ready
@@ -24,9 +30,12 @@ function useNotificationObserver() {
 
     function redirect(notification) {
       console.log("Triggered REDIRECT")
-      const data = notification.request.content.data.data;
-      let url = data?.url;
-      console.log(JSON.stringify(data))
+      const payload = notification.request.content.data;
+      console.log("Notification Payload:", JSON.stringify(payload));
+      
+      // Check for URL in payload (support both direct and nested structure)
+      let url = payload?.url || payload?.data?.url;
+      
       console.log("URL RECEIVED :: ", url)
       if (url) {
         // Normalize URL: strip scheme if present (e.g. passr:// -> /)
@@ -42,11 +51,26 @@ function useNotificationObserver() {
         console.log("URL :: ", url)
         // Small delay to ensure navigation stack is ready on Android
         setTimeout(() => {
-          router.push(url);
+          const isChat = url.startsWith('/chat') || url.startsWith('/chat?');
+          const currentPathname = pathnameRef.current;
+          const currentIsChat = currentPathname === '/chat';
+
+          if (isChat && currentIsChat) {
+             // If we are already on the chat screen, replace the current route to avoid pushing a new screen
+             // Append a timestamp to force a refresh/update in the ChatScreen
+             const separator = url.includes('?') ? '&' : '?';
+             const refreshUrl = `${url}${separator}refreshTimestamp=${Date.now()}`;
+             router.replace(refreshUrl);
+          } else {
+             router.push(url);
+          }
         }, 100);
       } else {
         // Fallback for custom logic (e.g. your offer type)
-        if (data.type === 'offer' && data.listingId) {
+        // Check either payload directly or payload.data (if nested)
+        const data = payload?.data || payload;
+
+        if (data?.type === 'offer' && data?.listingId) {
           setTimeout(() => {
             router.push({
               pathname: '/profile/listing-offers',
@@ -54,7 +78,8 @@ function useNotificationObserver() {
                 listing: JSON.stringify({
                   id: data.listingId,
                   title: data.listingTitle || 'Listing',
-                  price: data.productPrice ?? 0,
+                  price: data.listingPrice ?? 0,
+                  image: data.listingImage,
                   sold: false,
                 }),
               },

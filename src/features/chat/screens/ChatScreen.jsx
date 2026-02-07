@@ -12,6 +12,7 @@ import {
   Pressable,
   Alert,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -52,6 +53,7 @@ function getDateOptionLabel(d, todayStart) {
 
 import { chatService } from '../../../services/ChatService';
 import { offerService } from '../../../services/OfferService';
+import { addNotificationListeners, setActiveChatId } from '../../../services/PushNotificationService';
 import auth from '../../../services/firebaseAuth';
 
 export default function ChatScreen() {
@@ -63,27 +65,39 @@ export default function ChatScreen() {
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme);
 
-  const isSeller = params.isSeller === 'true';
-  const buyerName = params.buyerName || 'Buyer';
-  const sellerName = params.sellerName || 'ASU Student';
-  const listingId = params.listingId || '';
-  
-  // Parse offer data if available
-  const offerData = params.offerData ? JSON.parse(params.offerData) : null;
+  const [offerDetails, setOfferDetails] = useState(null);
+  const [isLoadingOffer, setIsLoadingOffer] = useState(!!params.offerId);
+  const currentUser = auth().currentUser;
+
+  // Derive values from fetched offer or params
+  const offerData = offerDetails || (params.offerData ? JSON.parse(params.offerData) : null);
   const isBundle = offerData && offerData.items && offerData.items.length > 1;
 
+  // Robustly determine role
+  // If we have offerDetails, we can be certain about the role by checking sellerId against current user
+  // If not, we fall back to params
+  const isSeller = offerDetails 
+      ? (currentUser?.uid === offerDetails.sellerId) 
+      : (params.isSeller === 'true');
+
   const productTitle = isBundle 
-    ? `Bundle Offer (${offerData.items.length} items)`
-    : (offerData ? offerData.items[0].title : (params.productTitle || 'Product'));
+    ? `Bundle Offer (${offerData?.items?.length || 0} items)`
+    : (offerData?.items?.[0]?.title || params.productTitle || 'Product');
     
   const productPrice = isBundle
-    ? offerData.items.reduce((sum, item) => sum + (item.price || 0), 0)
-    : (offerData ? offerData.items[0].price : (params.productPrice ? parseFloat(params.productPrice) : 0));
+    ? (offerData?.items?.reduce((sum, item) => sum + (item.price || 0), 0) || 0)
+    : (offerData?.items?.[0]?.price || (params.productPrice ? parseFloat(params.productPrice) : 0));
 
-  const offerAmount = offerData 
-    ? offerData.totalOfferAmount 
-    : (params.offerAmount ? parseFloat(params.offerAmount) : 0);
-    
+  const offerAmount = offerData?.totalOfferAmount 
+    || (params.offerAmount ? parseFloat(params.offerAmount) : 0);
+
+  // Use enriched names from offerDetails if available
+  const buyerName = offerDetails?.buyerName || params.buyerName || 'Buyer';
+  const sellerName = offerDetails?.sellerName || params.sellerName || 'Seller';
+
+  // Listing ID from offer items or params
+  const listingId = offerData?.items?.[0]?.id || params.listingId || '';
+  
   const offerAcceptedFromParams = params.offerAccepted === 'true';
 
   const [offerAccepted, setOfferAccepted] = useState(offerAcceptedFromParams || false);
@@ -103,7 +117,30 @@ export default function ChatScreen() {
   const [scheduleTimePastWarning, setScheduleTimePastWarning] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const currentUser = auth().currentUser;
+  // Fetch Offer Details
+  useEffect(() => {
+    if (params.offerId) {
+        const fetchOffer = async () => {
+            try {
+                const data = await offerService.getOfferById(params.offerId);
+                console.log("OFFER DETAILS ::", data)
+                if (data) {
+                    setOfferDetails(data);
+                    if (data.status === 'accepted') {
+                        setOfferAccepted(true);
+                    }
+                }
+            } catch(e) {
+                console.error("Failed to fetch offer details", e);
+            } finally {
+                setIsLoadingOffer(false);
+            }
+        };
+        fetchOffer();
+    } else {
+        setIsLoadingOffer(false);
+    }
+  }, [params.offerId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -122,11 +159,14 @@ export default function ChatScreen() {
         })));
       }
       
-      // Refresh offer status
+      // Refresh offer status and details
       if (params.offerId) {
           const offer = await offerService.getOfferById(params.offerId);
-          if (offer && offer.status === 'accepted') {
-            setOfferAccepted(true);
+          if (offer) {
+            setOfferDetails(offer);
+            if (offer.status === 'accepted') {
+                setOfferAccepted(true);
+            }
           }
       }
     } catch (error) {
@@ -138,21 +178,30 @@ export default function ChatScreen() {
 
   useEffect(() => {
     const initChat = async () => {
+      // Wait for offer details if loading
+      if (isLoadingOffer) return;
+
       try {
-        const otherUserId = isSeller ? params.buyerId : params.sellerId;
-        const offerId = params.offerId;
+        // Use offerDetails to determine the OTHER user
+        // If I am the seller, other is buyerId. If I am buyer, other is sellerId.
+        // We prefer offerDetails over params.
         
-        if ((!otherUserId && !params.buyerId && !params.sellerId) || !listingId) {
-             console.log("Missing params for chat init", params);
-             return;
+        let targetUserId = null;
+        if (offerDetails) {
+            targetUserId = isSeller ? offerDetails.buyerId : offerDetails.sellerId;
         }
         
-        // Fallback for missing otherUserId if not passed explicitly but maybe in offerData? 
-        // But for now assume params are correct from previous steps.
-        const targetUserId = otherUserId || (isSeller ? offerData?.buyerId : offerData?.sellerId);
+        // Fallback to params
+        if (!targetUserId) {
+            targetUserId = isSeller ? params.buyerId : params.sellerId;
+        }
 
-        if (!targetUserId) return;
+        if (!targetUserId || !listingId) {
+             console.log("Missing params for chat init", { targetUserId, listingId });
+             return;
+        }
 
+        const offerId = params.offerId;
         const chat = await chatService.createOrGetChat(targetUserId, listingId, offerId);
         setChatId(chat._id);
         
@@ -171,13 +220,6 @@ export default function ChatScreen() {
                 timestamp: new Date(m.createdAt),
             })));
 
-            // Poll offer status if we have an offerId and it's not accepted yet
-            if (offerId) {
-              const offer = await offerService.getOfferById(offerId);
-              if (offer && offer.status === 'accepted') {
-                setOfferAccepted(true);
-              }
-            }
           } catch(e) {
             console.error("Error fetching data:", e);
           }
@@ -190,7 +232,46 @@ export default function ChatScreen() {
     };
 
     initChat();
-  }, [listingId, params.buyerId, params.sellerId, params.offerId]);
+  }, [listingId, params.buyerId, params.sellerId, params.offerId, params.refreshTimestamp, isLoadingOffer, offerDetails, isSeller]);
+
+  // Handle active chat state and real-time updates via notifications
+  useEffect(() => {
+    if (chatId) {
+      // Mark this chat as active globally to silence notifications
+      setActiveChatId(chatId);
+
+      // Listen for incoming notifications for this chat
+      const removeListeners = addNotificationListeners(
+        async (notification) => {
+          const data = notification.request.content.data || {};
+          
+          // If notification belongs to this chat, refresh messages silently
+          if (data.chatId === chatId) {
+            try {
+                const msgs = await chatService.getMessages(chatId);
+                msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                setMessages(msgs.map(m => ({
+                    id: m._id,
+                    text: m.text,
+                    type: m.type || 'text',
+                    schedule: m.schedule || null,
+                    sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+                    timestamp: new Date(m.createdAt),
+                })));
+            } catch (e) {
+                console.error("Silent refresh failed", e);
+            }
+          }
+        },
+        null // We don't handle responses here
+      );
+
+      return () => {
+        setActiveChatId(null);
+        if (removeListeners) removeListeners();
+      };
+    }
+  }, [chatId, currentUser, isSeller]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -517,6 +598,14 @@ export default function ChatScreen() {
   const showAcceptMock = !isSeller && !offerAccepted;
   const showPendingOverlay = !isSeller && !offerAccepted;
   const chatEnabled = offerAccepted;
+
+  if (isLoadingOffer) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

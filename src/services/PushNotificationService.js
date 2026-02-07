@@ -3,13 +3,36 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
+let activeChatId = null;
+
+export function setActiveChatId(id) {
+  activeChatId = id;
+}
+
+export function getActiveChatId() {
+  return activeChatId;
+}
+
 // Configure how notifications are handled when the app is in foreground
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async (notification) => {
+    const data = notification.request.content.data || {};
+    // If the user is currently viewing the chat that this notification belongs to,
+    // silence the notification (no alert, no sound).
+    if (activeChatId && data.chatId === activeChatId) {
+      return {
+        shouldShowAlert: false,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      };
+    }
+
+    return {
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    };
+  },
 });
 
 export async function registerForPushNotificationsAsync() {
