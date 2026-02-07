@@ -46,7 +46,7 @@ export default function MyProfileScreen() {
 
       // Ensure Google Sign-In is configured
       GoogleSignin.configure({
-        webClientId: '872459232362-fmrc9g7eiitgnps7i3uk6slau6ndhnkm.apps.googleusercontent.com',
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
       });
       
       // Perform sign out operations in parallel where possible

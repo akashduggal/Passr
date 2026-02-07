@@ -20,6 +20,7 @@ import PassrLogo from '../../../components/PassrLogo';
 import { GoogleSignin, statusCodes } from '../../../services/googleSignin';
 import auth from '../../../services/firebaseAuth';
 import UserService from '../../../services/UserService';
+import { registerForPushNotificationsAsync } from '../../../services/PushNotificationService';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 import { RESTRICT_TO_ASU_EMAIL } from '../../../constants/featureFlags';
@@ -37,7 +38,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     GoogleSignin.configure({
-      webClientId: '872459232362-fmrc9g7eiitgnps7i3uk6slau6ndhnkm.apps.googleusercontent.com',
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     });
   }, []);
 
@@ -64,16 +65,29 @@ export default function LoginScreen() {
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
       await auth().signInWithCredential(googleCredential);
       
+      // Register for push notifications
+      const expoPushToken = await registerForPushNotificationsAsync();
+
       // Sync user with backend
       await UserService.syncUser({
         email: user.email,
         name: user.name,
         picture: user.photo,
+        expoPushToken,
       });
 
       // Keep loading state true while navigating
       router.replace('/dashboard');
     } catch (error) {
+      // Cleanup partial session on error
+      try {
+        await auth().signOut();
+        await GoogleSignin.signOut();
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+        console.log('Cleanup error:', cleanupError);
+      }
+
       setIsLoading(false);
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         // user cancelled the login flow

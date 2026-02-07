@@ -3,6 +3,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '../src/services/firebaseAuth';
+import UserService from '../src/services/UserService';
 import { ENABLE_ONBOARDING } from '../src/constants/featureFlags';
 
 export default function Index() {
@@ -41,8 +42,25 @@ export default function Index() {
 
     checkOnboarding();
 
-    const subscriber = auth().onAuthStateChanged((user) => {
-      setUser(user);
+    const subscriber = auth().onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          // Verify backend connectivity and session validity
+          await UserService.getCurrentUser();
+          setUser(user);
+        } catch (error) {
+          console.error('Backend validation failed during boot:', error);
+          // If backend is unreachable or sync failed, force logout flow
+          setUser(null);
+          // Optional: Clear firebase session to prevent loop if desired, 
+          // but keeping it null in state is enough to redirect to Login.
+          // To be safe and ensure "explicit login" is required next time:
+          auth().signOut().catch(console.error);
+        }
+      } else {
+        setUser(null);
+      }
+      
       if (initializing) setInitializing(false);
     });
     return subscriber; // unsubscribe on unmount

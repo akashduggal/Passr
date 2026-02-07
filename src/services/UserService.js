@@ -161,6 +161,11 @@ class UserService {
   async removePushToken() {
     try {
       console.log('Removing push token...');
+      const user = auth().currentUser;
+      if (!user) {
+        console.log('User already logged out, skipping token removal');
+        return;
+      }
       // Set token to null in backend
       await this.updateUser({ expoPushToken: null });
       console.log('Push token removed successfully');

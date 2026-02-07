@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { notificationService } from '../services/NotificationService';
-import { registerForPushNotificationsAsync, addNotificationListeners } from '../services/PushNotificationService';
+import { addNotificationListeners } from '../services/PushNotificationService';
 import userService from '../services/UserService';
 import auth from '../services/firebaseAuth';
 
@@ -52,18 +52,6 @@ export const NotificationProvider = ({ children }) => {
     let removeListeners;
 
     if (user) {
-      // Register for push notifications
-      registerForPushNotificationsAsync().then(token => {
-        if (token) {
-          console.log('Push Token obtained:', token);
-          // Save token to user profile
-          userService.updateUser({ expoPushToken: token }).catch(err => {
-            // Ignore error if backend is not ready or mock
-            console.log('Failed to sync push token (backend might be mock):', err);
-          });
-        }
-      });
-
       // Add listeners
       removeListeners = addNotificationListeners(
         async (notification) => {
