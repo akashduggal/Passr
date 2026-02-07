@@ -3,12 +3,15 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { getTheme, ASU } from '../theme';
-import { formatRelativeTime } from '../utils/dateUtils';
+import { formatRelativeTime, formatExpiryTime } from '../utils/dateUtils';
+import auth from '../services/firebaseAuth';
 
 export default function ProductTile({ product, style, onPress, disabled }) {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
+  
+  const isViewerSeller = product.sellerId === auth().currentUser?.uid;
 
   const handlePress = () => {
     if (onPress) {
@@ -67,8 +70,18 @@ export default function ProductTile({ product, style, onPress, disabled }) {
         <Text style={styles.productTitle} numberOfLines={2}>
           {product.title}
         </Text>
-        <View style={styles.productMeta}>
+        <View style={[styles.productMeta, { justifyContent: 'space-between' }]}>
           <Text style={styles.productCondition}>{product.condition}</Text>
+          {isViewerSeller && product.expiresAt && (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="time-outline" size={12} color={ASU.maroon} style={{ marginRight: 2 }} />
+              <Text style={{ fontSize: 11, color: ASU.maroon, fontWeight: '600' }}>
+                 {formatExpiryTime(product.expiresAt) === 'Expired' 
+                   ? 'Expired' 
+                   : formatExpiryTime(product.expiresAt)}
+              </Text>
+            </View>
+          )}
         </View>
         <View style={styles.productFooter}>
           <Text style={styles.productPrice}>${product.price}</Text>

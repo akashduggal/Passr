@@ -35,3 +35,29 @@ export function formatRelativeTime(dateInput) {
     return `${years} year${years > 1 ? 's' : ''} ago`;
   }
 }
+
+export function formatExpiryTime(dateInput) {
+  if (!dateInput) return '';
+  
+  const now = new Date();
+  const date = new Date(dateInput);
+  const diffMs = date - now;
+  
+  if (isNaN(diffMs)) return '';
+  if (diffMs <= 0) return 'Expired';
+
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) {
+    return 'in < 1 min';
+  } else if (minutes < 60) {
+    return `in ${minutes} min${minutes > 1 ? 's' : ''}`;
+  } else if (hours < 24) {
+    return `in ${hours} hr${hours > 1 ? 's' : ''}`;
+  } else {
+    return `in ${days} day${days > 1 ? 's' : ''}`;
+  }
+}

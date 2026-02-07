@@ -26,7 +26,7 @@ import MakeOfferModal from '../components/MakeOfferModal';
 import { listingService } from '../../../services/ListingService';
 import { offerService } from '../../../services/OfferService';
 import auth from '../../../services/firebaseAuth';
-import { formatRelativeTime } from '../../../utils/dateUtils';
+import { formatRelativeTime, formatExpiryTime } from '../../../utils/dateUtils';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CAROUSEL_HEIGHT = 300;
@@ -274,6 +274,17 @@ export default function ProductDetailScreen() {
               {formatRelativeTime(product.postedAt || product.createdAt)}
             </Text>
           </View>
+
+          {isViewerSeller && product.expiresAt && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+              <Ionicons name="hourglass-outline" size={14} color={ASU.maroon} style={{ marginRight: 4 }} />
+              <Text style={{ color: ASU.maroon, fontSize: 13, fontWeight: '600' }}>
+                {formatExpiryTime(product.expiresAt) === 'Expired'
+                  ? 'Expired'
+                  : `Expires ${formatExpiryTime(product.expiresAt)}`}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Details: Category, Brand, Living Community; for Tickets also Event date, Venue */}
