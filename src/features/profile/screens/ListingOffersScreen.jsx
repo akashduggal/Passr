@@ -76,8 +76,8 @@ export default function ListingOffersScreen() {
   const handleAcceptOffer = async (offer) => {
     try {
       await offerService.acceptOffer(offer.id);
-      Alert.alert('Success', 'Offer accepted!');
       fetchOffers();
+      handleChat(offer);
     } catch (error) {
       console.error('Accept offer error:', error);
       Alert.alert('Error', 'Failed to accept offer');
@@ -128,6 +128,22 @@ export default function ListingOffersScreen() {
     return offer.items.reduce((sum, item) => sum + (item.price || 0), 0);
   };
 
+  const getOfferCount = (status) => {
+    return offers.filter(offer => offer.status === status).length;
+  };
+
+  const handleListingPress = () => {
+    if (!listing) return;
+    router.push({
+      pathname: '/product-detail',
+      params: {
+        product: JSON.stringify(listing),
+      },
+    });
+  };
+
+  const listingImage = listing?.images?.[0] || listing?.image;
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
 
@@ -138,17 +154,35 @@ export default function ListingOffersScreen() {
       >
         {/* Listing Info */}
         {listing && (
-          <View style={styles.listingInfo}>
-            <View style={styles.listingTitleRow}>
-              <Text style={styles.listingTitle}>{listing.title}</Text>
-              {isListingSold && (
-                <View style={styles.soldChip}>
-                  <Text style={styles.soldChipText}>Sold</Text>
-                </View>
-              )}
+          <TouchableOpacity 
+            style={styles.listingInfo} 
+            onPress={handleListingPress}
+            activeOpacity={0.8}
+          >
+            {listingImage ? (
+              <Image 
+                source={{ uri: listingImage }} 
+                style={styles.listingImage} 
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.listingImage, styles.listingImagePlaceholder]}>
+                <Ionicons name="image-outline" size={24} color={theme.textSecondary} />
+              </View>
+            )}
+            <View style={styles.listingDetails}>
+              <View style={styles.listingTitleRow}>
+                <Text style={styles.listingTitle} numberOfLines={2}>{listing.title}</Text>
+                {isListingSold && (
+                  <View style={styles.soldChip}>
+                    <Text style={styles.soldChipText}>Sold</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.listingPrice}>${listing.price}</Text>
             </View>
-            <Text style={styles.listingPrice}>${listing.price}</Text>
-          </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
         )}
 
         {/* Offers Tabs */}
@@ -163,18 +197,33 @@ export default function ListingOffersScreen() {
               onPress={() => setSelectedStatus(statusKey)}
               activeOpacity={0.8}
             >
-              <Text
-                style={[
-                  styles.tabText,
-                  selectedStatus === statusKey && styles.tabTextActive,
-                ]}
-              >
-                {statusKey === 'accepted'
-                  ? 'Accepted'
-                  : statusKey === 'pending'
-                  ? 'Pending'
-                  : 'Rejected'}
-              </Text>
+              <View style={styles.tabContent}>
+                <Text
+                  style={[
+                    styles.tabText,
+                    selectedStatus === statusKey && styles.tabTextActive,
+                  ]}
+                >
+                  {statusKey === 'accepted'
+                    ? 'Accepted'
+                    : statusKey === 'pending'
+                    ? 'Pending'
+                    : 'Rejected'}
+                </Text>
+                {getOfferCount(statusKey) > 0 && (
+                  <View style={[
+                    styles.countBadge,
+                    selectedStatus === statusKey && styles.countBadgeActive
+                  ]}>
+                    <Text style={[
+                      styles.countBadgeText,
+                      selectedStatus === statusKey && styles.countBadgeTextActive
+                    ]}>
+                      {getOfferCount(statusKey)}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </TouchableOpacity>
           ))}
         </View>
@@ -328,39 +377,57 @@ const getStyles = (theme) => StyleSheet.create({
     paddingBottom: 40,
   },
   listingInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: theme.surface,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: theme.border,
+  },
+  listingImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: theme.background,
+  },
+  listingImagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  listingDetails: {
+    flex: 1,
   },
   listingTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   listingTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: theme.text,
-    flex: 1,
+    flexShrink: 1,
   },
   soldChip: {
     backgroundColor: ASU.maroon,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
   soldChipText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
     color: ASU.white,
   },
   listingPrice: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
     color: ASU.maroon,
   },
@@ -380,9 +447,15 @@ const getStyles = (theme) => StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   tabButtonActive: {
     backgroundColor: ASU.maroon,
+  },
+  tabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   tabText: {
     fontSize: 14,
@@ -391,6 +464,26 @@ const getStyles = (theme) => StyleSheet.create({
   },
   tabTextActive: {
     color: ASU.white,
+  },
+  countBadge: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countBadgeActive: {
+    backgroundColor: ASU.white,
+  },
+  countBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  countBadgeTextActive: {
+    color: ASU.maroon,
   },
   emptyState: {
     flex: 1,

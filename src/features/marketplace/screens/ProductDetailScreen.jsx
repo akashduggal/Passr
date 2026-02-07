@@ -26,6 +26,7 @@ import MakeOfferModal from '../components/MakeOfferModal';
 import { listingService } from '../../../services/ListingService';
 import { offerService } from '../../../services/OfferService';
 import auth from '../../../services/firebaseAuth';
+import { formatRelativeTime } from '../../../utils/dateUtils';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CAROUSEL_HEIGHT = 300;
@@ -261,6 +262,7 @@ export default function ProductDetailScreen() {
               </View>
             )}
           </View>
+          
           <View style={styles.priceRow}>
             <Text style={styles.price}>${product.price ?? '—'}</Text>
             {product.condition && (
@@ -268,6 +270,9 @@ export default function ProductDetailScreen() {
                 <Text style={styles.conditionText}>{product.condition}</Text>
               </View>
             )}
+            <Text style={styles.postedTime}>
+              {formatRelativeTime(product.postedAt || product.createdAt)}
+            </Text>
           </View>
         </View>
 
@@ -306,16 +311,24 @@ export default function ProductDetailScreen() {
             isVerified={true}
             showSectionTitle={true}
             otherItemCount={allSellerListings.length}
-            onPress={() => {
-              router.push({
-                pathname: '/seller-profile',
-                params: {
-                  sellerId: sellerId || '',
-                  sellerName,
-                  livingCommunity: livingCommunity || '',
-                },
-              });
-            }}
+            onPress={
+              isViewerSeller || allSellerListings.length > 0
+                ? () => {
+                    if (isViewerSeller) {
+                      router.push('/profile/my-listings');
+                    } else {
+                      router.push({
+                        pathname: '/seller-profile',
+                        params: {
+                          sellerId: sellerId || '',
+                          sellerName,
+                          livingCommunity: livingCommunity || '',
+                        },
+                      });
+                    }
+                  }
+                : undefined
+            }
           />
           {/* Bundle & Save Promo */}
           {/* {allSellerListings.length > 0 && (
@@ -401,8 +414,8 @@ export default function ProductDetailScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Ionicons name="chatbubbles-outline" size={20} color={ASU.maroon} />
-              <Text style={[styles.messageButtonText, { color: ASU.maroon }]}>Go to Chat</Text>
+              <Ionicons name="chatbubbles-outline" size={20} color={ASU.white} />
+              <Text style={[styles.messageButtonText, { color: ASU.white }]}>Go to Chat</Text>
             </TouchableOpacity>
           )}
           {showWishlist && (
@@ -576,6 +589,11 @@ const getStyles = (theme) => StyleSheet.create({
     color: theme.text,
     lineHeight: 28,
   },
+  postedTime: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    marginLeft: 'auto',
+  },
   urgentBadge: {
     backgroundColor: ASU.gold,
     paddingHorizontal: 8,
@@ -698,7 +716,7 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16 + (Platform.OS === 'android' ? 40 : 0),
     backgroundColor: theme.surface,
     borderTopWidth: 1,
     borderTopColor: theme.border,

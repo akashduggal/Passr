@@ -142,18 +142,20 @@ export default function SellerProfileScreen() {
         {/* Listings Section */}
         <View style={styles.section}>
           {!isSelectionMode ? (
-             <View style={styles.promoContainer}>
-               <View style={styles.promoIconCircle}>
-                 <Ionicons name="layers" size={24} color={ASU.maroon} />
+             sellerListings.length > 1 && (
+               <View style={styles.promoContainer}>
+                 <View style={styles.promoIconCircle}>
+                   <Ionicons name="layers" size={24} color={ASU.maroon} />
+                 </View>
+                 <View style={styles.promoTextContent}>
+                   <Text style={styles.promoTitle}>Bundle & Save</Text>
+                   <Text style={styles.promoSubtitle}>Select multiple items to send a combined offer.</Text>
+                 </View>
+                 <TouchableOpacity onPress={toggleSelectionMode} style={styles.startBundleButton}>
+                   <Text style={styles.startBundleButtonText}>Start</Text>
+                 </TouchableOpacity>
                </View>
-               <View style={styles.promoTextContent}>
-                 <Text style={styles.promoTitle}>Bundle & Save</Text>
-                 <Text style={styles.promoSubtitle}>Select multiple items to send a combined offer.</Text>
-               </View>
-               <TouchableOpacity onPress={toggleSelectionMode} style={styles.startBundleButton}>
-                 <Text style={styles.startBundleButtonText}>Start</Text>
-               </TouchableOpacity>
-             </View>
+             )
           ) : (
             <View style={styles.selectionHeader}>
               <Text style={styles.selectionTitle}>Select items to bundle</Text>

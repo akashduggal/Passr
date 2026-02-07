@@ -3,35 +3,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { getTheme, ASU } from '../theme';
-
-function formatPostedDate(postedAt) {
-  if (!postedAt) return '';
-  
-  const now = new Date();
-  const posted = new Date(postedAt);
-  const diffMs = now - posted;
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const diffWeeks = Math.floor(diffDays / 7);
-  const diffMonths = Math.floor(diffDays / 30);
-
-  if (diffDays === 0) {
-    return 'Today';
-  } else if (diffDays === 1) {
-    return 'Yesterday';
-  } else if (diffDays < 7) {
-    return `${diffDays} days ago`;
-  } else if (diffWeeks === 1) {
-    return '1 week ago';
-  } else if (diffWeeks < 4) {
-    return `${diffWeeks} weeks ago`;
-  } else if (diffMonths === 1) {
-    return '1 month ago';
-  } else if (diffMonths < 12) {
-    return `${diffMonths} months ago`;
-  } else {
-    return `${Math.floor(diffMonths / 12)} year${Math.floor(diffMonths / 12) > 1 ? 's' : ''} ago`;
-  }
-}
+import { formatRelativeTime } from '../utils/dateUtils';
 
 export default function ProductTile({ product, style, onPress, disabled }) {
   const router = useRouter();
@@ -52,7 +24,7 @@ export default function ProductTile({ product, style, onPress, disabled }) {
     });
   };
 
-  const postedDate = formatPostedDate(product.postedAt || product.createdAt);
+  const postedDate = formatRelativeTime(product.postedAt || product.createdAt);
   const isSold = !!product.sold;
   const styles = getStyles(theme);
 
