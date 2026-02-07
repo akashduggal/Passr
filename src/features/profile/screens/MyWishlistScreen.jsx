@@ -12,8 +12,19 @@ export default function MyWishlistScreen() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme);
-  const { wishlistItems } = useWishlist();
+  const { wishlistItems, isLoading } = useWishlist();
   
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.emptyContainer} edges={['top', 'bottom']}>
+        <View style={{ transform: [{ scale: 1.5 }] }}>
+          {/* Use a simple ActivityIndicator or similar if available, or just Text for now */}
+          <Text style={{ color: theme.text }}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (wishlistItems.length === 0) {
     return (
       <SafeAreaView style={styles.emptyContainer} edges={['top', 'bottom']}>

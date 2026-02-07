@@ -1,24 +1,35 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import wishlistService from '../services/WishlistService';
+import auth from '../services/firebaseAuth';
 
 const WishlistContext = createContext();
-
-const WISHLIST_STORAGE_KEY = '@passr_wishlist';
 
 export function WishlistProvider({ children }) {
   const [wishlistItems, setWishlistItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    loadWishlist();
+    const subscriber = auth().onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+    });
+    return subscriber;
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadWishlist();
+    } else {
+      setWishlistItems([]);
+      setIsLoading(false);
+    }
+  }, [user]);
 
   const loadWishlist = async () => {
     try {
-      const storedWishlist = await AsyncStorage.getItem(WISHLIST_STORAGE_KEY);
-      if (storedWishlist) {
-        setWishlistItems(JSON.parse(storedWishlist));
-      }
+      setIsLoading(true);
+      const items = await wishlistService.getWishlist();
+      setWishlistItems(items);
     } catch (error) {
       console.error('Failed to load wishlist:', error);
     } finally {
@@ -26,29 +37,40 @@ export function WishlistProvider({ children }) {
     }
   };
 
-  const saveWishlist = async (items) => {
-    try {
-      await AsyncStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(items));
-    } catch (error) {
-      console.error('Failed to save wishlist:', error);
-    }
-  };
-
   const addToWishlist = async (product) => {
-    if (!product || !product.id) return;
+    if (!product || !product.id || !user) return;
     
     // Check if already exists to avoid duplicates
     if (isInWishlist(product.id)) return;
 
-    const newItems = [...wishlistItems, product];
+    // Optimistic update
+    const newItems = [product, ...wishlistItems];
     setWishlistItems(newItems);
-    await saveWishlist(newItems);
+
+    try {
+      await wishlistService.addToWishlist(product.id);
+    } catch (error) {
+      console.error('Failed to add to wishlist:', error);
+      // Revert on failure
+      setWishlistItems(wishlistItems);
+    }
   };
 
   const removeFromWishlist = async (productId) => {
+    if (!user) return;
+
+    // Optimistic update
+    const previousItems = [...wishlistItems];
     const newItems = wishlistItems.filter((item) => item.id !== productId);
     setWishlistItems(newItems);
-    await saveWishlist(newItems);
+
+    try {
+      await wishlistService.removeFromWishlist(productId);
+    } catch (error) {
+      console.error('Failed to remove from wishlist:', error);
+      // Revert on failure
+      setWishlistItems(previousItems);
+    }
   };
 
   const isInWishlist = (productId) => {
