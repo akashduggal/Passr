@@ -134,18 +134,6 @@ export default function MyOffersScreen() {
     setSelectedBundle(null);
   };
 
-  const handleOfferPress = (offer) => {
-    if (offer.type === 'bundle') {
-      handleBundlePress(offer);
-    } else if (offer.type === 'single' && offer.items.length > 0) {
-      const product = offer.items[0];
-      router.push({
-        pathname: '/product-detail',
-        params: { product: JSON.stringify(product) }
-      });
-    }
-  };
-
   const renderFilterTab = (label) => (
     <TouchableOpacity
       key={label}
@@ -174,8 +162,8 @@ export default function MyOffersScreen() {
     return (
       <TouchableOpacity
         style={styles.offerCard}
-        onPress={() => handleOfferPress(offer)}
-        activeOpacity={0.7}
+        onPress={isBundle ? () => handleBundlePress(offer) : undefined}
+        activeOpacity={isBundle ? 0.7 : 1}
       >
         {/* Header: Type & Date */}
         <View style={styles.cardHeader}>
