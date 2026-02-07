@@ -30,11 +30,14 @@ const CATEGORY_ICONS = {
 
 const PAGE_SIZE = 10;
 
+import { useFilters } from '../../../context/FilterContext';
+
 export default function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
+  const { selectedLivingCommunities } = useFilters();
   const headerHeight = Platform.OS === 'ios' ? 44 : 56;
   const topPadding = insets.top + headerHeight + 8;
 
@@ -89,12 +92,33 @@ export default function DashboardScreen() {
       const categoryParam = selectedCategory === 0 ? null : categoryName;
       
       const data = await listingService.getAllListings(nextPage, PAGE_SIZE, categoryParam, selectedSortId, submittedSearchQuery);
+
+      let filteredData = data;
+      // Apply client-side filtering for living communities
+      if (selectedLivingCommunities.length > 0) {
+        const LIVING_COMMUNITIES = [
+          { id: 'hyve', label: 'The Hyve' },
+          { id: 'paseo', label: 'Paseo on University' },
+          { id: 'skye', label: 'Skye at McClintock' },
+          { id: 'tooker', label: 'Tooker' },
+          { id: 'villas', label: 'The Villas on Apache' },
+          { id: 'union', label: 'Union Tempe' },
+          { id: 'district', label: 'The District on Apache' },
+        ];
+        
+        filteredData = data.filter(item => {
+          if (!item.livingCommunity) return false;
+          // Find the ID for the item's living community label
+          const community = LIVING_COMMUNITIES.find(c => c.label === item.livingCommunity);
+          return community && selectedLivingCommunities.includes(community.id);
+        });
+      }
       
       if (reset) {
-        setAllProducts(data);
+        setAllProducts(filteredData);
         setPage(1);
       } else {
-        setAllProducts(prev => [...prev, ...data]);
+        setAllProducts(prev => [...prev, ...filteredData]);
         setPage(nextPage);
       }
       
@@ -112,7 +136,7 @@ export default function DashboardScreen() {
   // Initial load and filter change
   useEffect(() => {
     fetchListings(true);
-  }, [selectedCategory, selectedSortId, submittedSearchQuery]);
+  }, [selectedCategory, selectedSortId, submittedSearchQuery, selectedLivingCommunities]);
 
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
