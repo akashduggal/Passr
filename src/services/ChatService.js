@@ -1,6 +1,76 @@
 import userService from './UserService';
+import { supabase } from './supabase';
 
 class ChatService {
+  /**
+   * Map database message to app model
+   * @param {object} dbMessage 
+   */
+  _mapMessage(dbMessage) {
+    if (!dbMessage) return null;
+    const {
+      chat_id,
+      sender_id,
+      image_url,
+      message_type,
+      schedule_data,
+      created_at,
+      user_data, // If joined
+      ...rest
+    } = dbMessage;
+
+    return {
+      ...rest,
+      _id: dbMessage.id,
+      id: dbMessage.id,
+      text: dbMessage.content,
+      chatId: chat_id,
+      senderId: sender_id,
+      image: image_url,
+      type: message_type,
+      schedule: schedule_data,
+      createdAt: created_at,
+      // For GiftedChat or UI, we might need 'user' object. 
+      // Since Realtime only gives the row, we might need to construct it 
+      // or fetch it. For now, we'll rely on the caller to enrich it if needed,
+      // or we can assume the senderId is enough to determine "me" vs "them".
+      user: {
+          _id: sender_id
+      }
+    };
+  }
+
+  /**
+   * Subscribe to new messages for a chat
+   * @param {string} chatId 
+   * @param {function} onMessage - Callback(message)
+   * @returns {object} Subscription object with unsubscribe method
+   */
+  subscribeToMessages(chatId, onMessage) {
+    const channel = supabase
+      .channel(`chat:${chatId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `chat_id=eq.${chatId}`,
+        },
+        (payload) => {
+          const newMessage = this._mapMessage(payload.new);
+          onMessage(newMessage);
+        }
+      )
+      .subscribe();
+
+    return {
+      unsubscribe: () => {
+        supabase.removeChannel(channel);
+      }
+    };
+  }
+
   /**
    * Create a new chat or get existing one
    * @param {string} otherUserId - ID of the other user

@@ -236,41 +236,34 @@ export default function ChatScreen() {
     initChat();
   }, [listingId, params.buyerId, params.sellerId, params.offerId, params.refreshTimestamp, isLoadingOffer, offerDetails, isSeller]);
 
-  // Handle active chat state and real-time updates via notifications
+  // Handle active chat state and real-time updates via Supabase
   useEffect(() => {
     if (chatId) {
       // Mark this chat as active globally to silence notifications
       setActiveChatId(chatId);
 
-      // Listen for incoming notifications for this chat
-      const removeListeners = addNotificationListeners(
-        async (notification) => {
-          const data = notification.request.content.data || {};
+      // Subscribe to real-time messages
+      const subscription = chatService.subscribeToMessages(chatId, (newMessage) => {
+        // Avoid duplicates if any
+        setMessages(prevMessages => {
+          if (prevMessages.some(m => m.id === newMessage._id)) return prevMessages;
+
+          const formattedMessage = {
+            id: newMessage._id,
+            text: newMessage.text,
+            type: newMessage.type || 'text',
+            schedule: newMessage.schedule || null,
+            sender: newMessage.senderId === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+            timestamp: new Date(newMessage.createdAt),
+          };
           
-          // If notification belongs to this chat, refresh messages silently
-          if (data.chatId === chatId) {
-            try {
-                const msgs = await chatService.getMessages(chatId);
-                msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-                setMessages(msgs.map(m => ({
-                    id: m._id,
-                    text: m.text,
-                    type: m.type || 'text',
-                    schedule: m.schedule || null,
-                    sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
-                    timestamp: new Date(m.createdAt),
-                })));
-            } catch (e) {
-                console.error("Silent refresh failed", e);
-            }
-          }
-        },
-        null // We don't handle responses here
-      );
+          return [...prevMessages, formattedMessage];
+        });
+      });
 
       return () => {
         setActiveChatId(null);
-        if (removeListeners) removeListeners();
+        subscription.unsubscribe();
       };
     }
   }, [chatId, currentUser, isSeller]);
@@ -288,18 +281,6 @@ export default function ChatScreen() {
       setInputText(''); // Optimistic clear
       try {
         await chatService.sendMessage(chatId, text);
-        // Messages will be updated by poller, or we can optimistic add.
-        // Let's rely on poller for simplicity or manual fetch
-        const msgs = await chatService.getMessages(chatId);
-        msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-        setMessages(msgs.map(m => ({
-            id: m._id,
-            text: m.text,
-            type: m.type || 'text',
-            schedule: m.schedule || null,
-            sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
-            timestamp: new Date(m.createdAt),
-        })));
       } catch (error) {
         console.error("Send message error", error);
         // Restore text if failed?
@@ -354,19 +335,7 @@ export default function ChatScreen() {
         setOfferAccepted(true);
         Alert.alert("Success", "Offer accepted!");
         
-        // Refresh messages
-        if (chatId) {
-            const msgs = await chatService.getMessages(chatId);
-            msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-            setMessages(msgs.map(m => ({
-                id: m._id,
-                text: m.text,
-                type: m.type || 'text',
-                schedule: m.schedule || null,
-                sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
-                timestamp: new Date(m.createdAt),
-            })));
-        }
+        // Refresh messages handled by Realtime if backend sends system message
     } catch (error) {
         Alert.alert("Error", "Failed to accept offer");
     }
@@ -555,16 +524,6 @@ export default function ChatScreen() {
             if (chatId) {
                 try {
                     await chatService.sendMessage(chatId, 'Pickup confirmed', null, 'schedule_acceptance');
-                    const msgs = await chatService.getMessages(chatId);
-                    msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-                    setMessages(msgs.map(m => ({
-                        id: m._id,
-                        text: m.text,
-                        type: m.type || 'text',
-                        schedule: m.schedule || null,
-                        sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
-                        timestamp: new Date(m.createdAt),
-                    })));
                 } catch (e) {
                     console.error("Failed to accept schedule", e);
                 }
