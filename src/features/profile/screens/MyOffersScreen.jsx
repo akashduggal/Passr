@@ -10,6 +10,7 @@ import {
   Modal,
   Platform,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -48,9 +49,10 @@ export default function MyOffersScreen() {
   const [selectedBundle, setSelectedBundle] = useState(null);
   const [offers, setOffers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchMyOffers = useCallback(async () => {
-    setIsLoading(true);
+  const fetchMyOffers = useCallback(async (showLoader = true) => {
+    if (showLoader) setIsLoading(true);
     try {
       const data = await offerService.getMyOffers();
       
@@ -66,9 +68,15 @@ export default function MyOffersScreen() {
     } catch (error) {
       console.error('Failed to fetch offers:', error);
     } finally {
-      setIsLoading(false);
+      if (showLoader) setIsLoading(false);
     }
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchMyOffers(false);
+    setRefreshing(false);
+  }, [fetchMyOffers]);
 
   useFocusEffect(
     useCallback(() => {
@@ -84,7 +92,7 @@ export default function MyOffersScreen() {
     if (activeTab === 'active') {
       result = result.filter((o) => o.status === 'pending' || o.status === 'accepted');
     } else {
-      result = result.filter((o) => o.status === 'rejected' || o.status === 'completed' || o.status === 'cancelled');
+      result = result.filter((o) => o.status === 'rejected' || o.status === 'completed' || o.status === 'cancelled' || o.status === 'sold');
     }
 
     // 2. Filter by Type (All vs Single vs Bundle)
@@ -100,6 +108,7 @@ export default function MyOffersScreen() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'accepted': return ASU.green;
+      case 'sold': return ASU.green;
       case 'rejected': return ASU.maroon;
       default: return ASU.warning;
     }
@@ -108,6 +117,7 @@ export default function MyOffersScreen() {
   const getStatusLabel = (status) => {
     switch (status) {
       case 'accepted': return 'Accepted';
+      case 'sold': return 'Purchased';
       case 'rejected': return 'Rejected';
       default: return 'Pending';
     }
@@ -315,6 +325,14 @@ export default function MyOffersScreen() {
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={ASU.maroon} // iOS
+            colors={[ASU.maroon]} // Android
+          />
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="pricetags-outline" size={64} color={theme.textSecondary} />

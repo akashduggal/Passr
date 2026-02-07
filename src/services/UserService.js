@@ -1,22 +1,45 @@
 import auth from './firebaseAuth';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Use localhost for development, can be configured via environment variables
-// For Android Emulator use 10.0.2.2, for iOS Simulator use localhost
-const getBaseUrl = () => {
-  // Use localtunnel URL for physical device testing
-  // Remove /api suffix as it will be appended by service methods or we need the root for auth
-  return 'https://passr-dev-akash-v3.loca.lt';
-  // return 'https://passr-backend.vercel.app'
-};
+const API_URL_KEY = 'api_base_url';
 
-const BASE_URL = getBaseUrl();
-console.log('UserService initialized with BASE_URL:', BASE_URL);
+// Default URL
+const DEFAULT_URL = 'https://passr-dev-akash-v3.loca.lt';
 
 class UserService {
+  constructor() {
+    this._baseUrl = DEFAULT_URL;
+    this.init();
+  }
+
+  async init() {
+    try {
+      const storedUrl = await AsyncStorage.getItem(API_URL_KEY);
+      if (storedUrl) {
+        this._baseUrl = storedUrl;
+        console.log('Restored API URL:', this._baseUrl);
+      }
+    } catch (e) {
+      console.error('Failed to load API URL', e);
+    }
+  }
+
   get baseUrl() {
-    return BASE_URL;
+    return this._baseUrl;
+  }
+
+  async setBaseUrl(url) {
+    // Remove trailing slash if present
+    const cleanUrl = url.replace(/\/$/, '');
+    this._baseUrl = cleanUrl;
+    try {
+      await AsyncStorage.setItem(API_URL_KEY, cleanUrl);
+      console.log('Saved new API URL:', cleanUrl);
+    } catch (e) {
+      console.error('Failed to save API URL', e);
+    }
   }
 
   /**
@@ -43,7 +66,7 @@ class UserService {
   async syncUser(userData) {
     try {
       const headers = await this.getHeaders();
-      const response = await fetch(`${BASE_URL}/api/users/sync`, {
+      const response = await fetch(`${this.baseUrl}/api/users/sync`, {
         method: 'POST',
         headers,
         body: JSON.stringify(userData),
@@ -61,7 +84,7 @@ class UserService {
   async getCurrentUser() {
     try {
       const headers = await this.getHeaders();
-      const response = await fetch(`${BASE_URL}/api/users/me`, {
+      const response = await fetch(`${this.baseUrl}/api/users/me`, {
         method: 'GET',
         headers,
       });
@@ -79,7 +102,7 @@ class UserService {
   async updateUser(userData) {
     try {
       const headers = await this.getHeaders();
-      const response = await fetch(`${BASE_URL}/api/users/me`, {
+      const response = await fetch(`${this.baseUrl}/api/users/me`, {
         method: 'PUT',
         headers,
         body: JSON.stringify(userData),
@@ -103,7 +126,7 @@ class UserService {
   async getUserProfile(userId) {
     try {
       const headers = await this.getHeaders();
-      const response = await fetch(`${BASE_URL}/users/${userId}`, {
+      const response = await fetch(`${this.baseUrl}/api/users/${userId}`, {
         method: 'GET',
         headers,
       });
@@ -120,7 +143,7 @@ class UserService {
   async deleteUser() {
     try {
       const headers = await this.getHeaders();
-      const response = await fetch(`${BASE_URL}/users/me`, {
+      const response = await fetch(`${this.baseUrl}/api/users/me`, {
         method: 'DELETE',
         headers,
       });

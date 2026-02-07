@@ -335,6 +335,7 @@ export default function ChatScreen() {
                         
                         await listingService.markAsSold(listingId, targetUserId);
                         setListing(prev => ({ ...prev, sold: true, soldToUserId: targetUserId }));
+                        setOfferDetails(prev => prev ? ({ ...prev, status: 'sold' }) : prev);
                         Alert.alert("Success", "Item marked as sold!");
                     } catch (error) {
                         console.error("Mark as sold error", error);
@@ -690,7 +691,11 @@ export default function ChatScreen() {
             <Text style={styles.productPrice}>${productPrice.toFixed(0)}</Text>
           </View>
           <View style={styles.offerInfo}>
-            <Text style={styles.offerLabel}>{isSeller ? 'Accepted offer' : 'Your offer'}</Text>
+            <Text style={[styles.offerLabel, offerDetails?.status === 'sold' && { color: '#2E7D32', fontWeight: 'bold' }]}>
+                {offerDetails?.status === 'sold' 
+                    ? (isSeller ? 'Sold' : 'Purchased')
+                    : (isSeller ? 'Accepted offer' : 'Your offer')}
+            </Text>
             <Text style={styles.offerAmount}>${offerAmount.toFixed(0)}</Text>
           </View>
         </View>

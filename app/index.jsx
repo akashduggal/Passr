@@ -3,6 +3,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '../src/services/firebaseAuth';
+import { ENABLE_ONBOARDING } from '../src/constants/featureFlags';
 
 export default function Index() {
   const [initializing, setInitializing] = useState(true);
@@ -13,6 +14,12 @@ export default function Index() {
   useEffect(() => {
     const checkOnboarding = async () => {
       try {
+        if (!ENABLE_ONBOARDING) {
+          setHasSeenOnboarding(true);
+          setCheckingOnboarding(false);
+          return;
+        }
+
         const alwaysShow = await AsyncStorage.getItem('alwaysShowOnboarding');
         // Default to TRUE if not set (for mocking purposes as requested)
         if (alwaysShow === 'true' || alwaysShow === null) {

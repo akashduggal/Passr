@@ -9,6 +9,8 @@ import {
   Platform,
   Alert,
   Image,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -20,6 +22,7 @@ import auth from '../../../services/firebaseAuth';
 import UserService from '../../../services/UserService';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
+import { RESTRICT_TO_ASU_EMAIL } from '../../../constants/featureFlags';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +31,8 @@ export default function LoginScreen() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const [isLoading, setIsLoading] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [tempUrl, setTempUrl] = useState('');
   const styles = getStyles(theme, isDarkMode);
 
   useEffect(() => {
@@ -45,7 +50,7 @@ export default function LoginScreen() {
       const response = await GoogleSignin.signIn();
       const { idToken, user } = response.data || response;
 
-      if (user?.email && !user.email.toLowerCase().endsWith('@asu.edu')) {
+      if (RESTRICT_TO_ASU_EMAIL && user?.email && !user.email.toLowerCase().endsWith('@asu.edu')) {
         await GoogleSignin.signOut();
         setIsLoading(false);
         Alert.alert('Access Restricted', 'Only @asu.edu email addresses are allowed.');
@@ -135,6 +140,58 @@ export default function LoginScreen() {
           <Text style={styles.termsText}>
             By signing in, you agree to our Terms of Service and Privacy Policy.
           </Text>
+
+          {/* API URL Configuration */}
+          <TouchableOpacity 
+            style={{ marginTop: 20, padding: 10 }}
+            onPress={() => {
+              setTempUrl(UserService.baseUrl);
+              setSettingsVisible(true);
+            }}
+          >
+            <Text style={{ color: theme.textSecondary, fontSize: 12, textAlign: 'center', textDecorationLine: 'underline' }}>
+              Change Backend URL
+            </Text>
+          </TouchableOpacity>
+
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={settingsVisible}
+            onRequestClose={() => setSettingsVisible(false)}
+          >
+            <View style={styles.centeredView}>
+              <View style={[styles.modalView, { backgroundColor: theme.surface }]}>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Set Backend URL</Text>
+                <TextInput
+                  style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+                  onChangeText={setTempUrl}
+                  value={tempUrl}
+                  placeholder="https://..."
+                  placeholderTextColor={theme.textSecondary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.border }]}
+                    onPress={() => setSettingsVisible(false)}
+                  >
+                    <Text style={{ color: theme.text }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: ASU.maroon }]}
+                    onPress={() => {
+                       UserService.setBaseUrl(tempUrl);
+                       setSettingsVisible(false);
+                    }}
+                  >
+                    <Text style={{ color: 'white' }}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
 
           {/* Dev/Expo Go Bypass */}
           {(__DEV__ || Constants.appOwnership === 'expo') && (
@@ -298,5 +355,54 @@ const getStyles = (theme, isDarkMode) => StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     opacity: 0.7,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalView: {
+    margin: 20,
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '80%',
+  },
+  modalTitle: {
+    marginBottom: 15,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  input: {
+    height: 40,
+    width: '100%',
+    margin: 12,
+    borderWidth: 1,
+    padding: 10,
+    borderRadius: 8,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 15,
+    gap: 10,
+  },
+  modalButton: {
+    flex: 1,
+    borderRadius: 10,
+    padding: 10,
+    elevation: 2,
+    alignItems: 'center',
   },
 });
