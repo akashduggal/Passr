@@ -60,7 +60,7 @@ function HeaderRight() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => router.push('/profile/my-profile')}
+        onPress={() => router.push('/profile-my-profile')}
         activeOpacity={0.8}
         style={{
           width: 36,

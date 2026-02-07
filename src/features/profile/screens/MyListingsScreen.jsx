@@ -106,7 +106,7 @@ export default function MyListingsScreen() {
 
   const handleViewOffers = (listing) => {
     router.push({
-      pathname: '/profile/listing-offers',
+      pathname: '/profile-listing-offers',
       params: {
         listing: JSON.stringify(listing),
       },

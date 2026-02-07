@@ -328,7 +328,7 @@ export default function ProductDetailScreen() {
               isViewerSeller || allSellerListings.length > 0
                 ? () => {
                     if (isViewerSeller) {
-                      router.push('/profile/my-listings');
+                      router.push('/profile-my-listings');
                     } else {
                       router.push({
                         pathname: '/seller-profile',
@@ -384,7 +384,7 @@ export default function ProductDetailScreen() {
               style={[styles.messageButton, { backgroundColor: theme.primary || ASU.gold }]}
               onPress={() => {
                 router.push({
-                  pathname: '/profile/listing-offers',
+                  pathname: '/profile-listing-offers',
                   params: {
                     listing: JSON.stringify(product)
                   }

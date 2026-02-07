@@ -98,7 +98,7 @@ export default function NotificationsScreen() {
     if (n.type === 'offer' && n.listingId != null) {
       // Navigate to Listing Offers page for this listing (Pending tab is default)
       router.push({
-        pathname: '/profile/listing-offers',
+        pathname: '/profile-listing-offers',
         params: {
           listing: JSON.stringify({
             id: n.listingId,

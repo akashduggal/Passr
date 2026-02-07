@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import MessagesScreen from '../../src/features/profile/screens/MessagesScreen';
+import MessagesScreen from '../src/features/profile/screens/MessagesScreen';
 
 export default function MessagesRoute() {
   return (

@@ -74,7 +74,7 @@ function useNotificationObserver() {
         if (data?.type === 'offer' && data?.listingId) {
           setTimeout(() => {
             router.push({
-              pathname: '/profile/listing-offers',
+              pathname: '/profile-listing-offers',
               params: {
                 listing: JSON.stringify({
                   id: data.listingId,
@@ -181,12 +181,60 @@ export default function Layout() {
               }}
             />
             <Stack.Screen
-              name="profile"
+              name="profile-my-listings"
               options={{
-                headerShown: false, // Hide root header, let profile stack handle it
-                title: '',
+                title: 'My Listings',
+                headerBackTitleVisible: false,
                 headerBackButtonDisplayMode: 'minimal',
-                headerTransparent: true
+              }}
+            />
+            <Stack.Screen
+              name="profile-past-orders"
+              options={{
+                title: 'Offers',
+                headerBackTitleVisible: false,
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            />
+            <Stack.Screen
+              name="profile-faq"
+              options={{
+                title: 'FAQ',
+                headerBackTitleVisible: false,
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            />
+            <Stack.Screen
+              name="profile-my-wishlist"
+              options={{
+                title: 'My Wishlist',
+                headerBackTitleVisible: false,
+                headerTransparent: true,
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            />
+            <Stack.Screen
+              name="profile-notification-settings"
+              options={{
+                title: 'Notifications',
+                headerBackTitleVisible: false,
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            />
+            <Stack.Screen
+              name="profile-privacy-data"
+              options={{
+                title: 'Privacy & Data',
+                headerBackTitleVisible: false,
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            />
+            <Stack.Screen
+              name="profile-support"
+              options={{
+                title: 'Support',
+                headerBackTitleVisible: false,
+                headerBackButtonDisplayMode: 'minimal',
               }}
             />
             <Stack.Screen

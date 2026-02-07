@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
-import MyProfileScreen from '../../src/features/profile/screens/MyProfileScreen';
-import { useTheme } from '../../src/context/ThemeContext';
-import { getTheme, ASU } from '../../src/theme';
+import MyProfileScreen from '../src/features/profile/screens/MyProfileScreen';
+import { useTheme } from '../src/context/ThemeContext';
+import { getTheme, ASU } from '../src/theme';
 
 export default function MyProfileRoute() {
   const { isDarkMode } = useTheme();

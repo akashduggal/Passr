@@ -63,7 +63,7 @@ export default function UserProfileScreen({ isTab = false }) {
       icon: 'document-text-outline',
       backgroundColor: ASU.gray6,
       iconColor: ASU.maroon,
-      route: '/profile/my-listings',
+      route: '/profile-my-listings',
     },
     {
       id: 'faqs',
@@ -72,7 +72,7 @@ export default function UserProfileScreen({ isTab = false }) {
       icon: 'help-circle-outline',
       backgroundColor: ASU.gray6,
       iconColor: ASU.maroon,
-      route: '/profile/faq',
+      route: '/profile-faq',
     },
     // {
     //   id: 'messages',
@@ -81,7 +81,7 @@ export default function UserProfileScreen({ isTab = false }) {
     //   icon: 'chatbubble-outline',
     //   backgroundColor: ASU.gray6,
     //   iconColor: ASU.blue,
-    //   route: '/profile/messages',
+    //   route: '/profile-messages',
     // },
     {
       id: 'offers',
@@ -90,7 +90,7 @@ export default function UserProfileScreen({ isTab = false }) {
       icon: 'cash-outline',
       backgroundColor: ASU.gray6,
       iconColor: ASU.pink,
-      route: '/profile/past-orders',
+      route: '/profile-past-orders',
     },
     {
       id: 'wishlist',
@@ -99,14 +99,14 @@ export default function UserProfileScreen({ isTab = false }) {
       icon: 'heart-outline',
       backgroundColor: ASU.gray6,
       iconColor: ASU.orange,
-      route: '/profile/my-wishlist',
+      route: '/profile-my-wishlist',
     },
   ];
 
   const navItems = [
-    { id: 'notifications', title: 'Notification Settings', icon: 'notifications-outline', route: '/profile/notification-settings' },
-    { id: 'privacy', title: 'Privacy and Data', icon: 'lock-closed-outline', route: '/profile/privacy-data' },
-    { id: 'support', title: 'Support', icon: 'headset-outline', route: '/profile/support' },
+    { id: 'notifications', title: 'Notification Settings', icon: 'notifications-outline', route: '/profile-notification-settings' },
+    { id: 'privacy', title: 'Privacy and Data', icon: 'lock-closed-outline', route: '/profile-privacy-data' },
+    { id: 'support', title: 'Support', icon: 'headset-outline', route: '/profile-support' },
   ];
 
   const styles = getStyles(theme, insets, isTab);
