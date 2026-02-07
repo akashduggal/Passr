@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const API_URL_KEY = 'api_base_url';
 
 // Default URL
-const DEFAULT_URL = 'https://passr-dev-akash-v3.loca.lt';
+const DEFAULT_URL = process.env.EXPO_PUBLIC_API_URL || 'https://passr-dev-akash-v3.loca.lt';
 
 class UserService {
   constructor() {
