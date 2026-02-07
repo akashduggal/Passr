@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,8 +13,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Picker } from '@react-native-picker/picker';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +25,13 @@ import { listingService } from '../../../services/ListingService';
 
 const BASE_CATEGORIES = ['Furniture', 'Electronics', 'Escooters', 'Kitchen'];
 const CATEGORIES = ENABLE_TICKETS ? [...BASE_CATEGORIES, 'Tickets'] : BASE_CATEGORIES;
+const CATEGORY_ICONS = {
+  'Furniture': 'bed-outline',
+  'Electronics': 'desktop-outline',
+  'Escooters': 'bicycle-outline',
+  'Kitchen': 'restaurant-outline',
+  'Tickets': 'ticket-outline',
+};
 const CONDITIONS = ['New', 'Like New', 'Fair', 'Good'];
 const CONDITION_ICONS = {
   'New': 'sparkles-outline',
@@ -136,6 +142,28 @@ export default function AddListingScreen({ isTab = false }) {
     }
   }, [params.listingData, params.initialCategory]);
 
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        // Reset form when screen loses focus (tab change), but only if not editing an existing listing
+        if (!isEditing) {
+          setTitle('');
+          setDescription('');
+          setPrice('');
+          setImages([]);
+          setSelectedCategory(null);
+          setSelectedBrand(null);
+          setSelectedCondition(null);
+          setSelectedCommunity(null);
+          setIsUrgent(false);
+          setEventDate('');
+          setVenue('');
+          setSelectedCoverIndex(0);
+        }
+      };
+    }, [isEditing])
+  );
+
   const requestMediaLibraryPermission = async () => {
     if (Platform.OS === 'web') return true;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -243,18 +271,15 @@ export default function AddListingScreen({ isTab = false }) {
     return (
       <View key={index} style={styles.imageTile}>
         {isEmpty ? (
-          <TouchableOpacity
+          <View
             style={[styles.placeholderTile, { borderColor: theme.border }]}
-            onPress={takePhoto}
-            activeOpacity={0.7}
-            disabled={isCompressing}
           >
-            {isCompressing ? (
+            {isCompressing && index === images.length ? (
               <ActivityIndicator size="small" color={ASU.maroon} />
             ) : (
-              <Ionicons name="camera-outline" size={28} color={theme.textSecondary} />
+              <Ionicons name="image-outline" size={28} color={theme.textSecondary} />
             )}
-          </TouchableOpacity>
+          </View>
         ) : (
           <TouchableOpacity 
             style={styles.imageContainer}
@@ -414,19 +439,35 @@ export default function AddListingScreen({ isTab = false }) {
         <View style={styles.section}>
           <View style={styles.categoryBrandRow}>
             <View style={styles.pickerHalf}>
-              <Text style={[styles.rowLabel, { color: theme.text }]}>Category</Text>
+              <View style={styles.labelRow}>
+                <Ionicons name="grid-outline" size={16} color={theme.text} style={styles.labelIcon} />
+                <Text style={[styles.rowLabel, { color: theme.text }]}>Category</Text>
+              </View>
               <TouchableOpacity
                 style={[styles.pickerTrigger, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 onPress={() => setCategoryPickerVisible(true)}
               >
-                <Text style={[styles.pickerTriggerText, { color: selectedCategory ? theme.text : theme.placeholder }]} numberOfLines={1}>
-                  {selectedCategoryLabel}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
+                  {selectedCategory && (
+                    <Ionicons 
+                      name={CATEGORY_ICONS[selectedCategory] || 'pricetag-outline'} 
+                      size={18} 
+                      color={theme.text} 
+                      style={{ marginRight: 8 }} 
+                    />
+                  )}
+                  <Text style={[styles.pickerTriggerText, { color: selectedCategory ? theme.text : theme.placeholder, marginRight: 0 }]} numberOfLines={1}>
+                    {selectedCategoryLabel}
+                  </Text>
+                </View>
                 <Ionicons name="chevron-down" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
             <View style={styles.pickerHalf}>
-              <Text style={[styles.rowLabel, { color: theme.text }]}>{ENABLE_TICKETS && selectedCategory === 'Tickets' ? 'Event type' : 'Brand'}</Text>
+              <View style={styles.labelRow}>
+                <Ionicons name="pricetag-outline" size={16} color={theme.text} style={styles.labelIcon} />
+                <Text style={[styles.rowLabel, { color: theme.text }]}>{ENABLE_TICKETS && selectedCategory === 'Tickets' ? 'Event type' : 'Brand'}</Text>
+              </View>
               <TouchableOpacity
                 style={[styles.pickerTrigger, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 onPress={() => setBrandPickerVisible(true)}
@@ -441,63 +482,107 @@ export default function AddListingScreen({ isTab = false }) {
           </View>
         </View>
 
-        <Modal visible={categoryPickerVisible} transparent animationType="slide">
+        <Modal visible={categoryPickerVisible} transparent animationType="fade">
           <Pressable style={styles.modalOverlay} onPress={() => setCategoryPickerVisible(false)}>
             <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
               <View style={styles.pickerHeader}>
-                <Text style={[styles.pickerHeaderTitle, { color: theme.text }]}>Category</Text>
+                <Text style={[styles.pickerHeaderTitle, { color: theme.text }]}>Select Category</Text>
                 <TouchableOpacity onPress={() => setCategoryPickerVisible(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                  <Text style={[styles.pickerDone, { color: ASU.maroon }]}>Done</Text>
+                  <Ionicons name="close-circle" size={28} color={theme.textSecondary} />
                 </TouchableOpacity>
               </View>
-              <View style={styles.pickerWrapper}>
-                <Picker
-                  selectedValue={selectedCategory}
-                  onValueChange={(v) => setSelectedCategory(v)}
-                  style={[styles.picker, { color: theme.text }]}
-                  dropdownIconColor={theme.textSecondary}
-                >
-                  <Picker.Item label="e.g. Furniture" value={null} color={theme.placeholder} />
-                  {CATEGORIES.map((c) => (
-                    <Picker.Item key={c} label={c} value={c} color={theme.text} />
-                  ))}
-                </Picker>
-              </View>
+              <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={false}>
+                {CATEGORIES.map((c) => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.optionRow, { borderBottomColor: theme.border }]}
+                    onPress={() => {
+                      setSelectedCategory(c);
+                      setSelectedBrand(null);
+                      setCategoryPickerVisible(false);
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons 
+                        name={CATEGORY_ICONS[c] || 'pricetag-outline'} 
+                        size={20} 
+                        color={selectedCategory === c ? ASU.maroon : theme.text} 
+                        style={{ marginRight: 12 }} 
+                      />
+                      <Text style={[
+                        styles.optionText, 
+                        { color: selectedCategory === c ? ASU.maroon : theme.text },
+                        selectedCategory === c && styles.selectedOptionText
+                      ]}>
+                        {c}
+                      </Text>
+                    </View>
+                    {selectedCategory === c && (
+                      <Ionicons name="checkmark-circle" size={24} color={ASU.maroon} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </Pressable>
           </Pressable>
         </Modal>
 
-        <Modal visible={brandPickerVisible} transparent animationType="slide">
+        <Modal visible={brandPickerVisible} transparent animationType="fade">
           <Pressable style={styles.modalOverlay} onPress={() => setBrandPickerVisible(false)}>
             <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
               <View style={styles.pickerHeader}>
-                <Text style={[styles.pickerHeaderTitle, { color: theme.text }]}>{ENABLE_TICKETS && selectedCategory === 'Tickets' ? 'Event type' : 'Brand'}</Text>
+                <Text style={[styles.pickerHeaderTitle, { color: theme.text }]}>
+                  {ENABLE_TICKETS && selectedCategory === 'Tickets' ? 'Select Event Type' : 'Select Brand'}
+                </Text>
                 <TouchableOpacity onPress={() => setBrandPickerVisible(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                  <Text style={[styles.pickerDone, { color: ASU.maroon }]}>Done</Text>
+                  <Ionicons name="close-circle" size={28} color={theme.textSecondary} />
                 </TouchableOpacity>
               </View>
-              <View style={styles.pickerWrapper}>
-                <Picker
-                  selectedValue={selectedBrand}
-                  onValueChange={(v) => setSelectedBrand(v)}
-                  style={[styles.picker, { color: theme.text }]}
-                  dropdownIconColor={theme.textSecondary}
-                >
-                  <Picker.Item label={brandPlaceholder} value={null} color={theme.placeholder} />
-                  {availableBrands.map((brand) => (
-                    <Picker.Item key={brand} label={brand} value={brand} color={theme.text} />
-                  ))}
-                </Picker>
-              </View>
+              <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={false}>
+                {availableBrands.map((brand) => (
+                  <TouchableOpacity
+                    key={brand}
+                    style={[styles.optionRow, { borderBottomColor: theme.border }]}
+                    onPress={() => {
+                      setSelectedBrand(brand);
+                      setBrandPickerVisible(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.optionText, 
+                      { color: selectedBrand === brand ? ASU.maroon : theme.text },
+                      selectedBrand === brand && styles.selectedOptionText
+                    ]}>
+                      {brand}
+                    </Text>
+                    {selectedBrand === brand && (
+                      <Ionicons name="checkmark-circle" size={24} color={ASU.maroon} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </Pressable>
           </Pressable>
         </Modal>
 
         {/* Photos */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Photos</Text>
+          <View style={styles.labelRow}>
+            <Ionicons name="camera-outline" size={18} color={theme.text} style={styles.labelIcon} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Photos</Text>
+          </View>
           {Platform.OS !== 'web' && (
             <View style={styles.photoOptionsRow}>
+              <TouchableOpacity
+                style={[styles.photoOptionButton, { backgroundColor: theme.surface, borderColor: ASU.maroon }]}
+                onPress={takePhoto}
+                activeOpacity={0.7}
+                disabled={isCompressing}
+              >
+                <Ionicons name="camera-outline" size={22} color={ASU.maroon} />
+                <Text style={styles.photoOptionText}>Take Photo</Text>
+              </TouchableOpacity>
+              
               <TouchableOpacity
                 style={[styles.photoOptionButton, { backgroundColor: theme.surface, borderColor: ASU.maroon }]}
                 onPress={pickImage}
@@ -505,7 +590,7 @@ export default function AddListingScreen({ isTab = false }) {
                 disabled={isCompressing}
               >
                 <Ionicons name="images-outline" size={22} color={ASU.maroon} />
-                <Text style={styles.photoOptionText}>Choose from Library</Text>
+                <Text style={styles.photoOptionText}>Library</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -516,7 +601,10 @@ export default function AddListingScreen({ isTab = false }) {
 
         {/* Title */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Title</Text>
+          <View style={styles.labelRow}>
+            <Ionicons name="text-outline" size={18} color={theme.text} style={styles.labelIcon} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Title</Text>
+          </View>
           <TextInput
             style={[styles.titleInput, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]}
             placeholder="e.g. Office Desk Chair"
@@ -528,7 +616,10 @@ export default function AddListingScreen({ isTab = false }) {
 
         {/* Description */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Description</Text>
+          <View style={styles.labelRow}>
+            <Ionicons name="document-text-outline" size={18} color={theme.text} style={styles.labelIcon} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Description</Text>
+          </View>
           <TextInput
             style={[styles.descriptionInput, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]}
             placeholder="Describe the item you're selling..."
@@ -553,7 +644,10 @@ export default function AddListingScreen({ isTab = false }) {
         <View style={styles.section}>
           <View style={styles.priceUrgentRow}>
             <View style={styles.priceUrgentItem}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Price</Text>
+              <View style={styles.labelRow}>
+                <Ionicons name="cash-outline" size={18} color={theme.text} style={styles.labelIcon} />
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Price</Text>
+              </View>
               <View style={[styles.priceInputContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <Text style={[styles.pricePrefix, { color: theme.textSecondary }]}>$</Text>
                 <TextInput
@@ -567,7 +661,10 @@ export default function AddListingScreen({ isTab = false }) {
               </View>
             </View>
             <View style={styles.priceUrgentItem}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Mark as urgent</Text>
+              <View style={styles.labelRow}>
+                <Ionicons name="flash-outline" size={18} color={theme.text} style={styles.labelIcon} />
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Mark as urgent</Text>
+              </View>
               <TouchableOpacity
                 style={[styles.urgentToggle, isUrgent && styles.urgentToggleActive]}
                 onPress={() => setIsUrgent((prev) => !prev)}
@@ -582,7 +679,10 @@ export default function AddListingScreen({ isTab = false }) {
 
         {/* Condition */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Condition</Text>
+          <View style={styles.labelRow}>
+            <Ionicons name="construct-outline" size={18} color={theme.text} style={styles.labelIcon} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Condition</Text>
+          </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsContainer} style={styles.chipsScrollView}>
             {CONDITIONS.map((condition) => {
               const isSelected = selectedCondition === condition;
@@ -604,7 +704,10 @@ export default function AddListingScreen({ isTab = false }) {
 
         {/* Living Community */}
         <View style={styles.section}>
-          <Text style={[styles.rowLabel, { color: theme.text }]}>Living Community</Text>
+          <View style={styles.labelRow}>
+            <Ionicons name="home-outline" size={16} color={theme.text} style={styles.labelIcon} />
+            <Text style={[styles.rowLabel, { color: theme.text }]}>Living Community</Text>
+          </View>
           <TouchableOpacity
             style={[styles.pickerTrigger, styles.pickerFull, { backgroundColor: theme.surface, borderColor: theme.border }]}
             onPress={() => setPickerVisible(true)}
@@ -614,28 +717,38 @@ export default function AddListingScreen({ isTab = false }) {
           </TouchableOpacity>
         </View>
 
-        <Modal visible={pickerVisible} transparent animationType="slide">
+        <Modal visible={pickerVisible} transparent animationType="fade">
           <Pressable style={styles.modalOverlay} onPress={() => setPickerVisible(false)}>
             <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
               <View style={styles.pickerHeader}>
-                <Text style={[styles.pickerHeaderTitle, { color: theme.text }]}>Living Community</Text>
+                <Text style={[styles.pickerHeaderTitle, { color: theme.text }]}>Select Living Community</Text>
                 <TouchableOpacity onPress={() => setPickerVisible(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                  <Text style={[styles.pickerDone, { color: ASU.maroon }]}>Done</Text>
+                  <Ionicons name="close-circle" size={28} color={theme.textSecondary} />
                 </TouchableOpacity>
               </View>
-              <View style={styles.pickerWrapper}>
-                <Picker
-                  selectedValue={selectedCommunity}
-                  onValueChange={(v) => setSelectedCommunity(v)}
-                  style={[styles.picker, { color: theme.text }]}
-                  dropdownIconColor={theme.textSecondary}
-                >
-                  <Picker.Item label="Select community" value={null} color={theme.placeholder} />
-                  {LIVING_COMMUNITIES.map((c) => (
-                    <Picker.Item key={c.id} label={c.label} value={c.id} color={theme.text} />
-                  ))}
-                </Picker>
-              </View>
+              <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={false}>
+                {LIVING_COMMUNITIES.map((c) => (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={[styles.optionRow, { borderBottomColor: theme.border }]}
+                    onPress={() => {
+                      setSelectedCommunity(c.id);
+                      setPickerVisible(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.optionText, 
+                      { color: selectedCommunity === c.id ? ASU.maroon : theme.text },
+                      selectedCommunity === c.id && styles.selectedOptionText
+                    ]}>
+                      {c.label}
+                    </Text>
+                    {selectedCommunity === c.id && (
+                      <Ionicons name="checkmark-circle" size={24} color={ASU.maroon} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </Pressable>
           </Pressable>
         </Modal>
@@ -700,7 +813,6 @@ const getStyles = (theme, insets) => StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
   },
   categoryBrandRow: {
     flexDirection: 'row',
@@ -709,10 +821,17 @@ const getStyles = (theme, insets) => StyleSheet.create({
   pickerHalf: {
     flex: 1,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  labelIcon: {
+    marginRight: 6,
+  },
   rowLabel: {
     fontSize: 14,
     fontWeight: '500',
-    marginBottom: 6,
   },
   pickerTrigger: {
     flexDirection: 'row',
@@ -734,6 +853,7 @@ const getStyles = (theme, insets) => StyleSheet.create({
   photoOptionsRow: {
     flexDirection: 'row',
     marginBottom: 12,
+    gap: 12,
   },
   photoOptionButton: {
     flex: 1,
@@ -893,36 +1013,48 @@ const getStyles = (theme, insets) => StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   modalContent: {
-    backgroundColor: ASU.white, // Will need to adapt to theme, but modal usually has white background
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    backgroundColor: theme.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 40 : (16 + (insets.bottom > 0 ? insets.bottom : 16)), // Fixed for Android nav bars
+    maxHeight: '60%',
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 10,
   },
   pickerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: ASU.gray2,
+    marginBottom: 16,
   },
   pickerHeaderTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
   },
-  pickerDone: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  pickerWrapper: {
-    maxHeight: 250,
-  },
-  picker: {
+  optionsList: {
     width: '100%',
+  },
+  optionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  optionText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  selectedOptionText: {
+    fontWeight: '700',
   },
   submitButton: {
     backgroundColor: ASU.maroon,

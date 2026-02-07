@@ -19,6 +19,15 @@ const SORT_OPTIONS = [
   { id: 'price_desc', label: 'Price: High to Low' },
 ];
 
+const CATEGORY_ICONS = {
+  'All': 'apps-outline',
+  'Furniture': 'bed-outline',
+  'Electronics': 'desktop-outline',
+  'Escooters': 'bicycle-outline',
+  'Kitchen': 'restaurant-outline',
+  'Tickets': 'ticket-outline',
+};
+
 const PAGE_SIZE = 10;
 
 export default function DashboardScreen() {
@@ -131,7 +140,11 @@ export default function DashboardScreen() {
   };
 
   const selectedSortLabel = SORT_OPTIONS.find((o) => o.id === selectedSortId)?.label ?? SORT_OPTIONS[0].label;
-  const styles = getStyles(theme);
+  const bottomInset = insets.bottom;
+
+  // ... (existing code)
+
+  const styles = getStyles(theme, bottomInset);
 
   const renderFooter = () => {
     if (!loadingMore) return null;
@@ -145,6 +158,44 @@ export default function DashboardScreen() {
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
       <View style={styles.headerContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsContainer}
+          style={styles.chipsScrollView}
+        >
+        {/* Chips should not show skeletons during standard loading/refreshing to avoid flickering UI */}
+        {categories.map((category, index) => {
+          const isSelected = selectedCategory === index;
+          return (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.chip,
+                isSelected && styles.chipSelected,
+              ]}
+              activeOpacity={0.7}
+              onPress={() => setSelectedCategory(index)}
+            >
+              <Ionicons 
+                name={CATEGORY_ICONS[category] || 'pricetag-outline'} 
+                size={16} 
+                color={isSelected ? ASU.white : theme.text} 
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={[
+                  styles.chipText,
+                  isSelected && styles.chipTextSelected,
+                ]}
+              >
+                {category}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+        </ScrollView>
+
         <View style={styles.searchRow}>
           <View style={styles.searchBarWrapper}>
             <Ionicons
@@ -189,38 +240,6 @@ export default function DashboardScreen() {
             <Ionicons name="options-outline" size={20} color={theme.text} />
           </TouchableOpacity>
         </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsContainer}
-          style={styles.chipsScrollView}
-        >
-        {/* Chips should not show skeletons during standard loading/refreshing to avoid flickering UI */}
-        {categories.map((category, index) => {
-          const isSelected = selectedCategory === index;
-          return (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.chip,
-                isSelected && styles.chipSelected,
-              ]}
-              activeOpacity={0.7}
-              onPress={() => setSelectedCategory(index)}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  isSelected && styles.chipTextSelected,
-                ]}
-              >
-                {category}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-        </ScrollView>
       </View>
       
       {isLoading && allProducts.length === 0 ? (
@@ -297,7 +316,7 @@ export default function DashboardScreen() {
   );
 }
 
-const getStyles = (theme) => StyleSheet.create({
+const getStyles = (theme, bottomInset) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
@@ -384,26 +403,36 @@ const getStyles = (theme) => StyleSheet.create({
   },
   sortModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end', // Bottom sheet style
   },
   sortModalContent: {
     width: '100%',
-    maxWidth: 340,
     backgroundColor: theme.surface,
-    borderRadius: 16,
-    padding: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : (24 + (bottomInset > 0 ? bottomInset : 16)), // Add extra padding for Android nav bar
+    shadowColor: theme.shadow,
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   sortModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
   },
   sortModalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: theme.text,
   },
@@ -411,20 +440,23 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  sortOptionSelected: {
+    backgroundColor: theme.surfaceHighlight || '#F5F5F5', // Light background for selected
+    borderBottomWidth: 0, // Remove old border
   },
   sortOptionText: {
     fontSize: 16,
-    color: theme.text,
-  },
-  sortOptionSelected: {
-    borderBottomColor: ASU.maroon,
+    color: theme.textSecondary,
+    fontWeight: '500',
   },
   sortOptionTextSelected: {
     color: ASU.maroon,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   productsGrid: {
     flexDirection: 'row',
@@ -443,7 +475,6 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 16,
   },
   searchBarWrapper: {
     flex: 1,
@@ -492,12 +523,15 @@ const getStyles = (theme) => StyleSheet.create({
   },
   chipsScrollView: {
     maxHeight: 40,
+    marginBottom: 16,
   },
   chipsContainer: {
     paddingRight: 12,
     gap: 8,
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
