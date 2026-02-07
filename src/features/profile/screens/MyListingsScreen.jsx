@@ -17,8 +17,51 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 import ProductTile from '../../../components/ProductTile';
+import ProductTileSkeleton from '../../../components/ProductTileSkeleton';
 import { listingService } from '../../../services/ListingService';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { Animated } from 'react-native';
+
+const ButtonSkeleton = () => {
+  const { isDarkMode } = useTheme();
+  const theme = getTheme(isDarkMode);
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnim, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [shimmerAnim]);
+
+  const shimmerOpacity = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.7],
+  });
+
+  return (
+    <View style={{ marginTop: 8, height: 36, backgroundColor: ASU.gray6, borderRadius: 8, overflow: 'hidden' }}>
+      <Animated.View
+        style={{
+          width: '100%',
+          height: '100%',
+          backgroundColor: ASU.gray5,
+          opacity: shimmerOpacity,
+        }}
+      />
+    </View>
+  );
+};
 
 export default function MyListingsScreen() {
   const router = useRouter();
@@ -90,8 +133,13 @@ export default function MyListingsScreen() {
         }
       >
         {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ASU.maroon} />
+          <View style={styles.listingsGrid}>
+            {[1, 2, 3, 4, 5, 6].map((key) => (
+              <View key={key} style={styles.listingWrapper}>
+                <ProductTileSkeleton style={styles.productTileFullWidth} />
+                <ButtonSkeleton />
+              </View>
+            ))}
           </View>
         ) : listings.length === 0 ? (
           <View style={styles.emptyState}>
