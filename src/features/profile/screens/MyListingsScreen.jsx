@@ -71,6 +71,7 @@ export default function MyListingsScreen() {
   const [listings, setListings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('active'); // 'active' | 'sold'
   const styles = getStyles(theme);
 
   useEffect(() => {
@@ -104,6 +105,10 @@ export default function MyListingsScreen() {
     }, [fetchMyListings])
   );
 
+  const activeListings = listings.filter(l => !l.sold);
+  const soldListings = listings.filter(l => l.sold);
+  const displayedListings = selectedTab === 'active' ? activeListings : soldListings;
+
   const handleViewOffers = (listing) => {
     router.push({
       pathname: '/profile-listing-offers',
@@ -124,6 +129,27 @@ export default function MyListingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tabButton, selectedTab === 'active' && styles.tabButtonActive]}
+          onPress={() => setSelectedTab('active')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabText, selectedTab === 'active' && styles.tabTextActive]}>
+            Active ({activeListings.length})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabButton, selectedTab === 'sold' && styles.tabButtonActive]}
+          onPress={() => setSelectedTab('sold')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabText, selectedTab === 'sold' && styles.tabTextActive]}>
+            Sold ({soldListings.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -141,24 +167,30 @@ export default function MyListingsScreen() {
               </View>
             ))}
           </View>
-        ) : listings.length === 0 ? (
+        ) : displayedListings.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={64} color={theme.textSecondary} />
-            <Text style={styles.emptyTitle}>No Listings Yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Create your first listing to start selling
+            <Text style={styles.emptyTitle}>
+              {selectedTab === 'active' ? 'No Active Listings' : 'No Sold Listings'}
             </Text>
-            <TouchableOpacity
-              style={styles.createButton}
-              onPress={() => router.push('/dashboard/add-listing')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.createButtonText}>Create Listing</Text>
-            </TouchableOpacity>
+            <Text style={styles.emptySubtitle}>
+              {selectedTab === 'active' 
+                ? 'Create your first listing to start selling' 
+                : 'Items you mark as sold will appear here'}
+            </Text>
+            {selectedTab === 'active' && (
+              <TouchableOpacity
+                style={styles.createButton}
+                onPress={() => router.push('/dashboard/add-listing')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.createButtonText}>Create Listing</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <View style={styles.listingsGrid}>
-            {listings.map((listing) => (
+            {displayedListings.map((listing) => (
               <View key={listing.id} style={styles.listingWrapper}>
                 <ProductTile 
                   product={listing} 
@@ -248,6 +280,34 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    padding: 16,
+    paddingBottom: 0,
+    gap: 12,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  tabButtonActive: {
+    backgroundColor: ASU.maroon,
+    borderColor: ASU.maroon,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  tabTextActive: {
+    color: ASU.white,
   },
   listingWrapper: {
     width: '48%',
