@@ -103,7 +103,6 @@ export default function ChatScreen() {
   const offerAcceptedFromParams = params.offerAccepted === 'true';
 
   const [offerAccepted, setOfferAccepted] = useState(offerAcceptedFromParams || false);
-  const [isOnline] = useState(true);
   const [messages, setMessages] = useState([]);
   const [chatId, setChatId] = useState(null);
   const [inputText, setInputText] = useState('');
@@ -624,26 +623,11 @@ export default function ChatScreen() {
           <View style={styles.headerInfo}>
             <View style={styles.headerTitleRow}>
               <Text style={styles.headerTitle}>{headerTitle}</Text>
-              <View style={[styles.statusIndicator, isOnline ? styles.statusOnline : styles.statusOffline]}>
-                <Text style={[styles.statusText, isOnline ? styles.statusTextOnline : styles.statusTextOffline]}>
-                  {isOnline ? 'Online' : 'Offline'}
-                </Text>
-              </View>
             </View>
           </View>
-          {isSeller && chatEnabled && (
-            <TouchableOpacity
-              style={styles.headerScheduleButton}
-              onPress={openScheduleModal}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              activeOpacity={0.6}
-            >
-              <Ionicons name="calendar-outline" size={24} color={theme.text} />
-            </TouchableOpacity>
-          )}
         </View>
 
-        {/* Product Info Card */}
+        {/* Product Info Card - Compact */}
         <View style={styles.productCard}>
           <View style={styles.productInfo}>
             <Text style={styles.productTitle} numberOfLines={1}>{productTitle}</Text>
@@ -653,46 +637,63 @@ export default function ChatScreen() {
             <Text style={[styles.offerLabel, offerDetails?.status === 'sold' && { color: '#2E7D32', fontWeight: 'bold' }]}>
                 {offerDetails?.status === 'sold' 
                     ? (isSeller ? 'Sold' : 'Purchased')
-                    : (isSeller ? 'Accepted offer' : 'Your offer')}
+                    : (isSeller ? 'Accepted' : 'Offer')}
             </Text>
             <Text style={styles.offerAmount}>${offerAmount.toFixed(0)}</Text>
           </View>
         </View>
 
         {isSeller && (
-            <View style={{ padding: 12 }}>
-                <View style={{ flexDirection: 'row' }}>
+            <View style={styles.actionContainer}>
+                {!listing?.sold && (
+                <View style={styles.actionButtonsRow}>
                     {!offerAccepted && (
                         <TouchableOpacity 
-                            style={[styles.acceptButton, { flex: 1, marginRight: 6, margin: 0 }]} 
+                            style={[styles.actionButton, styles.acceptButton]} 
                             onPress={handleAcceptOffer}
+                            activeOpacity={0.8}
                         >
-                            <Text style={styles.acceptButtonText}>Accept Offer</Text>
+                            <Ionicons name="checkmark-circle-outline" size={18} color={ASU.black} />
+                            <Text style={styles.actionButtonText}>Accept</Text>
                         </TouchableOpacity>
                     )}
                     
                     <TouchableOpacity 
-                        style={[styles.acceptButton, { backgroundColor: ASU.maroon, flex: 1, marginLeft: !offerAccepted ? 6 : 0, margin: 0 }]} 
+                        style={[styles.actionButton, styles.rejectButton]} 
                         onPress={handleRejectOffer}
+                        activeOpacity={0.8}
                     >
-                        <Text style={[styles.acceptButtonText, { color: ASU.white }]}>
-                            {offerAccepted ? "Reject Offer" : "Reject"}
+                        <Ionicons name="close-circle-outline" size={18} color={ASU.white} />
+                        <Text style={[styles.actionButtonText, { color: ASU.white }]}>
+                            Reject
                         </Text>
                     </TouchableOpacity>
-                </View>
 
-                {offerAccepted && listing && !listing.sold && (
-                    <TouchableOpacity 
-                        style={[styles.acceptButton, { backgroundColor: ASU.gold, margin: 0, marginTop: 10 }]}
-                        onPress={handleMarkAsSold}
-                    >
-                        <Text style={[styles.acceptButtonText, { color: ASU.black }]}>Mark as Sold to {buyerName}</Text>
-                    </TouchableOpacity>
+                    {offerAccepted && listing && !listing.sold && (
+                        <TouchableOpacity 
+                            style={[styles.actionButton, styles.markSoldButton]}
+                            onPress={handleMarkAsSold}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="pricetag-outline" size={18} color={ASU.black} />
+                            <Text style={styles.actionButtonText}>Mark Sold</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
                 )}
                 
                 {listing && listing.sold && (
-                     <View style={{ backgroundColor: '#e0e0e0', padding: 10, borderRadius: 8, alignItems: 'center', marginTop: 10 }}>
-                        <Text style={{ fontWeight: 'bold', color: '#555' }}>
+                     <View style={[styles.soldStatusContainer, 
+                        listing.soldToUserId === (offerDetails?.buyerId || params.buyerId) ? styles.soldToThisBuyer : styles.soldToOther
+                     ]}>
+                        <Ionicons 
+                            name={listing.soldToUserId === (offerDetails?.buyerId || params.buyerId) ? "checkmark-done-circle" : "information-circle"} 
+                            size={20} 
+                            color={listing.soldToUserId === (offerDetails?.buyerId || params.buyerId) ? "#1B5E20" : "#555"} 
+                        />
+                        <Text style={[styles.soldStatusText, 
+                             listing.soldToUserId === (offerDetails?.buyerId || params.buyerId) ? { color: "#1B5E20" } : { color: "#555" }
+                        ]}>
                             {listing.soldToUserId === (offerDetails?.buyerId || params.buyerId) 
                                 ? `Sold to ${buyerName}!` 
                                 : 'Sold to another user'}
@@ -974,6 +975,17 @@ export default function ChatScreen() {
             maxLength={500}
             editable={chatEnabled}
           />
+          
+          {isSeller && chatEnabled && (
+            <TouchableOpacity
+              style={styles.inputScheduleButton}
+              onPress={openScheduleModal}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="calendar-outline" size={20} color={theme.textSecondary} />
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             style={[
               styles.sendButton,
@@ -1225,33 +1237,6 @@ const getStyles = (theme, insets) => StyleSheet.create({
     fontWeight: '700',
     color: theme.text,
   },
-  statusIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  statusOnline: {
-    backgroundColor: ASU.green + '15',
-    borderColor: ASU.green + '30',
-  },
-  statusOffline: {
-    backgroundColor: theme.border,
-    borderColor: theme.border,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '600',
-    marginLeft: 2,
-  },
-  statusTextOnline: {
-    color: ASU.green,
-  },
-  statusTextOffline: {
-    color: theme.textSecondary,
-  },
   headerScheduleButton: {
     padding: 8,
     marginLeft: 8,
@@ -1260,7 +1245,7 @@ const getStyles = (theme, insets) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
+    padding: 8,
     backgroundColor: theme.surface,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
@@ -1270,13 +1255,13 @@ const getStyles = (theme, insets) => StyleSheet.create({
     marginRight: 16,
   },
   productTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: theme.text,
     marginBottom: 2,
   },
   productPrice: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.textSecondary,
   },
   offerInfo: {
@@ -1289,22 +1274,65 @@ const getStyles = (theme, insets) => StyleSheet.create({
     textTransform: 'uppercase',
   },
   offerAmount: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     color: ASU.maroon,
   },
-  acceptButton: {
-    backgroundColor: ASU.gold,
-    paddingVertical: 10,
+  actionContainer: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: theme.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 12,
+    paddingVertical: 6,
     borderRadius: 8,
+    gap: 6,
   },
-  acceptButtonText: {
-    color: ASU.black,
+  acceptButton: {
+    backgroundColor: ASU.gold,
+  },
+  rejectButton: {
+    backgroundColor: ASU.maroon,
+  },
+  markSoldButton: {
+    backgroundColor: ASU.gold,
+  },
+  actionButtonText: {
+    fontSize: 13,
     fontWeight: '700',
+    color: ASU.black,
+  },
+  soldStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
+    borderRadius: 8,
+    gap: 6,
+  },
+  soldToThisBuyer: {
+    backgroundColor: '#E8F5E9', // Light green
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  soldToOther: {
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  soldStatusText: {
     fontSize: 14,
+    fontWeight: '600',
   },
   messagesContainer: {
     flex: 1,
@@ -1411,6 +1439,18 @@ const getStyles = (theme, insets) => StyleSheet.create({
   inputDisabled: {
     opacity: 0.6,
     backgroundColor: theme.background,
+  },
+  inputScheduleButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+    marginRight: 8,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   sendButton: {
     width: 40,
