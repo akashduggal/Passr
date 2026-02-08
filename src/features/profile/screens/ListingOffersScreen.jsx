@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -42,14 +43,15 @@ export default function ListingOffersScreen() {
   const listing = params.listing ? JSON.parse(params.listing) : null;
   const [offers, setOffers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('pending'); // 'accepted' | 'pending' | 'rejected'
   const styles = getStyles(theme);
 
-  const fetchOffers = useCallback(async () => {
+  const fetchOffers = useCallback(async (showLoading = true) => {
     if (!listing?.id) return;
     
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const data = await offerService.getOffersForListing(listing.id);
       
       // Map backend data to UI expected format
@@ -65,9 +67,15 @@ export default function ListingOffersScreen() {
       console.error('Failed to fetch offers:', error);
       Alert.alert('Error', 'Failed to load offers');
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   }, [listing?.id]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchOffers(false);
+    setRefreshing(false);
+  }, [fetchOffers]);
 
   useEffect(() => {
     fetchOffers();
@@ -151,6 +159,9 @@ export default function ListingOffersScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 20 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ASU.maroon} />
+        }
       >
         {/* Listing Info */}
         {listing && (
