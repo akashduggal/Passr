@@ -14,7 +14,15 @@
       },
       "oauth_client": [
         {
-          "client_id": "872459232362-fmrc9g7eiitgnps7i3uk6slau6ndhnkm.apps.googleusercontent.com",
+          "client_id": "872459232362-3kkvmn2f74ttrt3u13etf16aqtq2dpaf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.passr.app",
+            "certificate_hash": "fa1e0dbc72daa407341ff6a0726f7eaa1ce1bacd"
+          }
+        },
+        {
+          "client_id": "872459232362-ivrsvlkk7bmg29sna98ah5do25ev2hq5.apps.googleusercontent.com",
           "client_type": 3
         }
       ],

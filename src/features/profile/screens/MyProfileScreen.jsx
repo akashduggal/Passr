@@ -169,6 +169,27 @@ export default function MyProfileScreen() {
           </TouchableOpacity>
 
           <Text style={styles.versionText}>Version 1.0.0</Text>
+
+          {/* Debug Info */}
+          <View style={{ marginTop: 20, padding: 15, backgroundColor: theme.surface, borderRadius: 12, marginBottom: 20 }}>
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: theme.text, marginBottom: 8 }}>Build Environment</Text>
+            
+            <Text style={{ fontSize: 10, color: theme.textSecondary }}>Environment: {__DEV__ ? 'Development' : 'Production'}</Text>
+            <Text style={{ fontSize: 10, color: theme.textSecondary }}>EAS Build Profile: {Constants.expoConfig?.extra?.eas?.buildProfile || 'N/A'}</Text>
+            <Text style={{ fontSize: 10, color: theme.textSecondary }}>Release Channel: {Constants.expoConfig?.updates?.url || 'N/A'}</Text>
+            
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: theme.text, marginTop: 12, marginBottom: 8 }}>Active Configuration</Text>
+            
+            <Text style={{ fontSize: 10, color: theme.textSecondary }}>API URL: {process.env.EXPO_PUBLIC_API_URL || 'undefined'}</Text>
+            <Text style={{ fontSize: 10, color: theme.textSecondary }}>Supabase URL: {process.env.EXPO_PUBLIC_SUPABASE_URL || 'undefined'}</Text>
+            <Text style={{ fontSize: 10, color: theme.textSecondary }}>Web Client ID: {process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'undefined'}</Text>
+
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: theme.text, marginTop: 12, marginBottom: 8 }}>Process Env Check</Text>
+             <Text style={{ fontSize: 10, color: theme.textSecondary }}>EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: {process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'undefined'}</Text>
+             <Text style={{ fontSize: 10, color: theme.textSecondary }}>EXPO_PUBLIC_API_URL: {process.env.EXPO_PUBLIC_API_URL || 'undefined'}</Text>
+             <Text style={{ fontSize: 10, color: theme.textSecondary }}>EXPO_PUBLIC_SUPABASE_URL: {process.env.EXPO_PUBLIC_SUPABASE_URL || 'undefined'}</Text>
+             <Text style={{ fontSize: 10, color: theme.textSecondary }}>EXPO_PUBLIC_SUPABASE_KEY: {process.env.EXPO_PUBLIC_SUPABASE_KEY ? 'Present' : 'undefined'}</Text>
+          </View>
         </View>
 
       </ScrollView>
