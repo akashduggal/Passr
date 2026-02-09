@@ -80,11 +80,11 @@ export default function MyProfileScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container}>
       <ScrollView 
         style={styles.content} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 16 }]}
+        contentContainerStyle={styles.scrollContent}
       >
         {/* Profile Card */}
         <View style={styles.profileCard}>

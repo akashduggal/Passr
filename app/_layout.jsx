@@ -213,7 +213,7 @@ export default function Layout() {
               options={{
                 title: 'My Wishlist',
                 headerBackTitleVisible: false,
-                headerTransparent: true,
+                headerTransparent: false,
                 headerBackButtonDisplayMode: 'minimal',
               }}
             />
