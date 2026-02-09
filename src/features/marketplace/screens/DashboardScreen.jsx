@@ -14,6 +14,7 @@ import CategoryChipSkeleton from '../../../components/CategoryChipSkeleton';
 import EmptyMarketplacePlaceholder from '../components/EmptyMarketplacePlaceholder';
 import NoSearchResults from '../components/NoSearchResults';
 import { listingService } from '../../../services/ListingService';
+import { useListings } from '../../../hooks/queries/useListingQueries';
 
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest First' },
@@ -52,7 +53,8 @@ const CategoryListing = ({
   filters,
   theme,
   styles,
-  onClearSearch
+  onClearSearch,
+  isVisible
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   
@@ -63,18 +65,14 @@ const CategoryListing = ({
     isFetchingNextPage,
     isLoading: isQueryLoading,
     refetch
-  } = useInfiniteQuery({
-    queryKey: ['listings', index, sortId, searchQuery, filters],
-    queryFn: async ({ pageParam = 1 }) => {
-      const categoryParam = index === 0 ? null : category;
-      // Small delay for UX on initial load (first page)
-      if (pageParam === 1) await new Promise(resolve => setTimeout(resolve, 500));
-      return await listingService.getAllListings(pageParam, PAGE_SIZE, categoryParam, sortId, searchQuery);
-    },
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage.length === PAGE_SIZE ? allPages.length + 1 : undefined;
-    },
+  } = useListings({
+    limit: PAGE_SIZE,
+    category: index === 0 ? null : category,
+    sortBy: sortId,
+    searchQuery: searchQuery,
+    filters: filters
+  }, {
+    enabled: isVisible
   });
 
   const allProductsRaw = useMemo(() => data?.pages.flat() || [], [data]);
@@ -358,6 +356,7 @@ export default function DashboardScreen() {
               theme={theme}
               styles={styles}
               onClearSearch={handleClearSearch}
+              isVisible={selectedCategory === index}
             />
           </View>
         ))}

@@ -26,7 +26,7 @@ export function useSellerListings(sellerId) {
   });
 }
 
-export function useListings(params) {
+export function useListings(params, options = {}) {
   return useInfiniteQuery({
     queryKey: listingKeys.list(params),
     queryFn: async ({ pageParam = 1 }) => {
@@ -35,13 +35,15 @@ export function useListings(params) {
         params.limit || 10,
         params.category,
         params.sortBy,
-        params.searchQuery
+        params.searchQuery,
+        params.filters
       );
     },
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.length === (params.limit || 10) ? allPages.length + 1 : undefined;
     },
     initialPageParam: 1,
+    ...options,
   });
 }
 
