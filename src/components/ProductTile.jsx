@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useState } from 'react';
 import { getTheme, ASU } from '../theme';
 import { formatRelativeTime, formatExpiryTime } from '../utils/dateUtils';
 import auth from '../services/firebaseAuth';
@@ -118,6 +119,14 @@ const getStyles = (theme) => StyleSheet.create({
     aspectRatio: 1,
     backgroundColor: theme.background,
     position: 'relative',
+  },
+  absoluteFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
   },
   productImage: {
     width: '100%',

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -7,39 +7,22 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
-import { faqService } from '../../../services/FaqService';
+import { useFaqs } from '../../../hooks/queries/useFaqQueries';
 
 export default function FaqScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = Platform.OS === 'ios' ? 44 : 56;
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
 
   // FAQ State
-  const [faqs, setFaqs] = useState([]);
+  const { data: faqs = [], isLoading, refetch, isRefetching } = useFaqs();
   const [expandedFaqId, setExpandedFaqId] = useState(null);
-  const [loadingFaqs, setLoadingFaqs] = useState(false);
-
-  useEffect(() => {
-    loadFaqs();
-  }, []);
-
-  const loadFaqs = async () => {
-    setLoadingFaqs(true);
-    try {
-      const data = await faqService.getFaqs();
-      setFaqs(data);
-    } catch (error) {
-      console.error('Failed to load FAQs', error);
-    } finally {
-      setLoadingFaqs(false);
-    }
-  };
 
   const toggleFaq = (id) => {
     setExpandedFaqId(prev => prev === id ? null : id);
@@ -53,6 +36,9 @@ export default function FaqScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={ASU.maroon} />
+        }
       >
         {/* Header Section */}
         <View style={styles.header}>
@@ -64,7 +50,7 @@ export default function FaqScreen() {
 
 
         <View style={styles.section}>
-          {loadingFaqs ? (
+          {isLoading ? (
             <ActivityIndicator size="large" color={ASU.maroon} style={{ marginTop: 40 }} />
           ) : faqs.length === 0 ? (
             <View style={styles.emptyState}>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -56,6 +56,9 @@ import { chatService } from '../../../services/ChatService';
 import { offerService } from '../../../services/OfferService';
 import { addNotificationListeners, setActiveChatId } from '../../../services/PushNotificationService';
 import auth from '../../../services/firebaseAuth';
+import { useMessages, useSendMessage, useCreateChat, chatKeys } from '../../../hooks/queries/useChatQueries';
+import { useAcceptOffer, useRejectOffer } from '../../../hooks/queries/useOfferQueries';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -65,6 +68,12 @@ export default function ChatScreen() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme, insets);
+  const queryClient = useQueryClient();
+
+  const createChatMutation = useCreateChat();
+  const sendMessageMutation = useSendMessage();
+  const acceptOfferMutation = useAcceptOffer();
+  const rejectOfferMutation = useRejectOffer();
 
   const [offerDetails, setOfferDetails] = useState(null);
   const [listing, setListing] = useState(null);
@@ -103,8 +112,23 @@ export default function ChatScreen() {
   const offerAcceptedFromParams = params.offerAccepted === 'true';
 
   const [offerAccepted, setOfferAccepted] = useState(offerAcceptedFromParams || false);
-  const [messages, setMessages] = useState([]);
   const [chatId, setChatId] = useState(null);
+  
+  const { data: serverMessages = [], refetch: refetchMessages } = useMessages(chatId);
+
+  const messages = useMemo(() => {
+    if (!serverMessages) return [];
+    const msgs = [...serverMessages].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    return msgs.map(m => ({
+        id: m._id,
+        text: m.text,
+        type: m.type || 'text',
+        schedule: m.schedule || null,
+        sender: m.user?._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
+        timestamp: new Date(m.createdAt),
+    }));
+  }, [serverMessages, currentUser, isSeller]);
+
   const [inputText, setInputText] = useState('');
   
   // Schedule state
@@ -148,16 +172,7 @@ export default function ChatScreen() {
     try {
       // Refresh messages if we have a chat ID
       if (chatId) {
-        const msgs = await chatService.getMessages(chatId);
-        msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-        setMessages(msgs.map(m => ({
-            id: m._id,
-            text: m.text,
-            type: m.type || 'text',
-            schedule: m.schedule || null,
-            sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
-            timestamp: new Date(m.createdAt),
-        })));
+        await refetchMessages();
       }
       
       // Refresh offer status and details
@@ -203,30 +218,13 @@ export default function ChatScreen() {
         }
 
         const offerId = params.offerId;
-        const chat = await chatService.createOrGetChat(targetUserId, listingId, offerId);
+        const chat = await createChatMutation.mutateAsync({ 
+            otherUserId: targetUserId, 
+            listingId, 
+            offerId 
+        });
         setChatId(chat._id);
         
-        const fetchMessagesAndStatus = async () => {
-          try {
-            const msgs = await chatService.getMessages(chat._id);
-            // Sort by createdAt asc
-            msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-            
-            setMessages(msgs.map(m => ({
-                id: m._id,
-                text: m.text,
-                type: m.type || 'text',
-                schedule: m.schedule || null,
-                sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
-                timestamp: new Date(m.createdAt),
-            })));
-
-          } catch(e) {
-            console.error("Error fetching data:", e);
-          }
-        };
-
-        fetchMessagesAndStatus();
       } catch (err) {
         console.error("Chat init error", err);
       }
@@ -243,20 +241,11 @@ export default function ChatScreen() {
 
       // Subscribe to real-time messages
       const subscription = chatService.subscribeToMessages(chatId, (newMessage) => {
-        // Avoid duplicates if any
-        setMessages(prevMessages => {
-          if (prevMessages.some(m => m.id === newMessage._id)) return prevMessages;
-
-          const formattedMessage = {
-            id: newMessage._id,
-            text: newMessage.text,
-            type: newMessage.type || 'text',
-            schedule: newMessage.schedule || null,
-            sender: newMessage.senderId === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
-            timestamp: new Date(newMessage.createdAt),
-          };
-          
-          return [...prevMessages, formattedMessage];
+        // Update query cache
+        queryClient.setQueryData(chatKeys.messages(chatId), (oldData) => {
+             const currentData = oldData || [];
+             if (currentData.some(m => m._id === newMessage._id)) return currentData;
+             return [...currentData, newMessage];
         });
       });
 
@@ -279,7 +268,7 @@ export default function ChatScreen() {
       const text = inputText.trim();
       setInputText(''); // Optimistic clear
       try {
-        await chatService.sendMessage(chatId, text);
+        await sendMessageMutation.mutateAsync({ chatId, text });
       } catch (error) {
         console.error("Send message error", error);
         // Restore text if failed?
@@ -330,7 +319,7 @@ export default function ChatScreen() {
   const handleAcceptOffer = async () => {
     try {
         if (!params.offerId) return;
-        await offerService.acceptOffer(params.offerId);
+        await acceptOfferMutation.mutateAsync(params.offerId);
         setOfferAccepted(true);
         Alert.alert("Success", "Offer accepted!");
         
@@ -352,22 +341,13 @@ export default function ChatScreen() {
                   onPress: async () => {
                       try {
                         if (!params.offerId) return;
-                        await offerService.rejectOffer(params.offerId);
+                        await rejectOfferMutation.mutateAsync(params.offerId);
                         setOfferAccepted(false);
                         Alert.alert("Success", "Offer rejected.");
                         
                         // Refresh messages
                         if (chatId) {
-                            const msgs = await chatService.getMessages(chatId);
-                            msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-                            setMessages(msgs.map(m => ({
-                                id: m._id,
-                                text: m.text,
-                                type: m.type || 'text',
-                                schedule: m.schedule || null,
-                                sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
-                                timestamp: new Date(m.createdAt),
-                            })));
+                            await refetchMessages();
                         }
                       } catch (error) {
                         Alert.alert("Error", "Failed to reject offer");
@@ -410,18 +390,12 @@ export default function ChatScreen() {
     // Send system message via API
     if (chatId) {
         try {
-            await chatService.sendMessage(chatId, text, null, 'schedule', scheduleData);
-            // Refresh messages
-            const msgs = await chatService.getMessages(chatId);
-            msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-            setMessages(msgs.map(m => ({
-                id: m._id,
-                text: m.text,
-                type: m.type || 'text',
-                schedule: m.schedule || null,
-                sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
-                timestamp: new Date(m.createdAt),
-            })));
+            await sendMessageMutation.mutateAsync({
+                chatId,
+                text,
+                type: 'schedule',
+                schedule: scheduleData
+            });
         } catch (e) {
             console.error("Failed to send schedule message", e);
         }
@@ -490,17 +464,11 @@ export default function ChatScreen() {
           onPress: async () => {
             if (chatId) {
                 try {
-                    await chatService.sendMessage(chatId, 'Pickup cancelled', null, 'schedule_cancellation');
-                    const msgs = await chatService.getMessages(chatId);
-                    msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-                    setMessages(msgs.map(m => ({
-                        id: m._id,
-                        text: m.text,
-                        type: m.type || 'text',
-                        schedule: m.schedule || null,
-                        sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
-                        timestamp: new Date(m.createdAt),
-                    })));
+                    await sendMessageMutation.mutateAsync({
+                        chatId,
+                        text: 'Pickup cancelled',
+                        type: 'schedule_cancellation'
+                    });
                 } catch (e) {
                     console.error("Failed to cancel schedule", e);
                 }
@@ -522,7 +490,11 @@ export default function ChatScreen() {
           onPress: async () => {
             if (chatId) {
                 try {
-                    await chatService.sendMessage(chatId, 'Pickup confirmed', null, 'schedule_acceptance');
+                    await sendMessageMutation.mutateAsync({
+                        chatId,
+                        text: 'Pickup confirmed',
+                        type: 'schedule_acceptance'
+                    });
                 } catch (e) {
                     console.error("Failed to accept schedule", e);
                 }
@@ -545,17 +517,11 @@ export default function ChatScreen() {
           onPress: async () => {
             if (chatId) {
                 try {
-                    await chatService.sendMessage(chatId, 'Pickup declined', null, 'schedule_rejection');
-                    const msgs = await chatService.getMessages(chatId);
-                    msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-                    setMessages(msgs.map(m => ({
-                        id: m._id,
-                        text: m.text,
-                        type: m.type || 'text',
-                        schedule: m.schedule || null,
-                        sender: m.user._id === currentUser?.uid ? (isSeller ? 'seller' : 'buyer') : (isSeller ? 'buyer' : 'seller'),
-                        timestamp: new Date(m.createdAt),
-                    })));
+                    await sendMessageMutation.mutateAsync({
+                        chatId,
+                        text: 'Pickup declined',
+                        type: 'schedule_rejection'
+                    });
                 } catch (e) {
                     console.error("Failed to reject schedule", e);
                 }

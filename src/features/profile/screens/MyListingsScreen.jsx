@@ -19,8 +19,10 @@ import { getTheme, ASU } from '../../../theme';
 import ProductTile from '../../../components/ProductTile';
 import ProductTileSkeleton from '../../../components/ProductTileSkeleton';
 import { listingService } from '../../../services/ListingService';
+import { useSellerListings } from '../../../hooks/queries/useListingQueries';
 import { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
+import auth from '../../../services/firebaseAuth';
 
 const ButtonSkeleton = () => {
   const { isDarkMode } = useTheme();
@@ -68,8 +70,15 @@ export default function MyListingsScreen() {
   const navigation = useNavigation();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
-  const [listings, setListings] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const currentUser = auth().currentUser;
+  
+  const { 
+    data: listings = [], 
+    isLoading, 
+    isRefetching,
+    refetch 
+  } = useSellerListings(currentUser?.uid);
+
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState('active'); // 'active' | 'sold'
   const styles = getStyles(theme);
@@ -80,30 +89,11 @@ export default function MyListingsScreen() {
     });
   }, [navigation, listings]);
 
-  const fetchMyListings = useCallback(async (shouldSetLoading = true) => {
-    if (shouldSetLoading) setIsLoading(true);
-    try {
-      const currentUser = await listingService.userService.getCurrentUser();
-      const data = await listingService.getMyListings(currentUser.uid);
-      setListings(data);
-    } catch (error) {
-      console.error('Failed to fetch my listings:', error);
-    } finally {
-      if (shouldSetLoading) setIsLoading(false);
-    }
-  }, []);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchMyListings(false);
+    await refetch();
     setRefreshing(false);
-  }, [fetchMyListings]);
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchMyListings();
-    }, [fetchMyListings])
-  );
+  }, [refetch]);
 
   const activeListings = listings.filter(l => !l.sold);
   const soldListings = listings.filter(l => l.sold);

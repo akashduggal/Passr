@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,9 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
-import { offerService } from '../../../services/OfferService';
+import { useListingOffers, useAcceptOffer, useRejectOffer } from '../../../hooks/queries/useOfferQueries';
 
 function formatDate(date) {
+  if (!date) return '';
   const now = new Date();
   const diffMs = now - date;
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -41,50 +42,36 @@ export default function ListingOffersScreen() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const listing = params.listing ? JSON.parse(params.listing) : null;
-  const [offers, setOffers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('pending'); // 'accepted' | 'pending' | 'rejected'
   const styles = getStyles(theme);
 
-  const fetchOffers = useCallback(async (showLoading = true) => {
-    if (!listing?.id) return;
-    
-    try {
-      if (showLoading) setIsLoading(true);
-      const data = await offerService.getOffersForListing(listing.id);
-      
-      // Map backend data to UI expected format
-      const mappedOffers = data.map(offer => ({
-        ...offer,
-        // Ensure offerAmount exists (backend might send amount or offerAmount)
-        offerAmount: offer.amount || offer.offerAmount || 0,
-        createdAt: new Date(offer.createdAt)
-      }));
-      
-      setOffers(mappedOffers);
-    } catch (error) {
-      console.error('Failed to fetch offers:', error);
-      Alert.alert('Error', 'Failed to load offers');
-    } finally {
-      if (showLoading) setIsLoading(false);
-    }
-  }, [listing?.id]);
+  const { 
+    data: offersData = [], 
+    isLoading, 
+    refetch, 
+    isRefetching 
+  } = useListingOffers(listing?.id);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchOffers(false);
-    setRefreshing(false);
-  }, [fetchOffers]);
+  const acceptOfferMutation = useAcceptOffer();
+  const rejectOfferMutation = useRejectOffer();
 
-  useEffect(() => {
-    fetchOffers();
-  }, [fetchOffers]);
+  const onRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  // Map backend data to UI expected format
+  const offers = useMemo(() => {
+    return offersData.map(offer => ({
+      ...offer,
+      // Ensure offerAmount exists (backend might send amount or offerAmount)
+      offerAmount: offer.amount || offer.offerAmount || 0,
+      createdAt: new Date(offer.createdAt)
+    }));
+  }, [offersData]);
 
   const handleAcceptOffer = async (offer) => {
     try {
-      await offerService.acceptOffer(offer.id);
-      fetchOffers();
+      await acceptOfferMutation.mutateAsync(offer.id);
       handleChat(offer);
     } catch (error) {
       console.error('Accept offer error:', error);
@@ -94,9 +81,8 @@ export default function ListingOffersScreen() {
 
   const handleRejectOffer = async (offer) => {
     try {
-      await offerService.rejectOffer(offer.id);
+      await rejectOfferMutation.mutateAsync(offer.id);
       Alert.alert('Success', 'Offer rejected');
-      fetchOffers();
     } catch (error) {
       console.error('Reject offer error:', error);
       Alert.alert('Error', 'Failed to reject offer');
@@ -124,12 +110,17 @@ export default function ListingOffersScreen() {
   const showOpenChat = (offer) => !isListingSold && offer.status === 'accepted';
 
   // Sort offers by createdAt (newest first) and filter by selected status
-  const sortedOffers = [...offers].sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-  );
-  const filteredOffers = sortedOffers.filter(
-    (offer) => offer.status === selectedStatus,
-  );
+  const sortedOffers = useMemo(() => {
+    return [...offers].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+  }, [offers]);
+
+  const filteredOffers = useMemo(() => {
+    return sortedOffers.filter(
+      (offer) => offer.status === selectedStatus,
+    );
+  }, [sortedOffers, selectedStatus]);
 
   const getOriginalTotal = (offer) => {
     if (!offer.items || offer.items.length === 0) return 0;
@@ -160,7 +151,7 @@ export default function ListingOffersScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingTop: (Platform.OS === 'ios' ? 44 : 56) + 20 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ASU.maroon} />
+          <RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={ASU.maroon} />
         }
       >
         {/* Listing Info */}

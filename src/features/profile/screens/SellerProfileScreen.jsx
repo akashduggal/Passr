@@ -17,6 +17,7 @@ import { ENABLE_TICKETS } from '../../../constants/featureFlags';
 import ProductTile from '../../../components/ProductTile';
 import MakeOfferModal from '../../marketplace/components/MakeOfferModal';
 import { listingService } from '../../../services/ListingService';
+import { useSellerListings, useListings } from '../../../hooks/queries/useListingQueries';
 
 export default function SellerProfileScreen() {
   const router = useRouter();
@@ -36,7 +37,39 @@ export default function SellerProfileScreen() {
   const [selectedIds, setSelectedIds] = useState(autoSelectId ? [autoSelectId] : []);
   const [offerModalVisible, setOfferModalVisible] = useState(false);
 
-  const [sellerListings, setSellerListings] = useState([]);
+  // Fetch listings: either by sellerId or everything (then filter by community locally for now, 
+  // though ideally we'd have a useCommunityListings hook)
+  
+  // Strategy: 
+  // 1. If sellerId exists, use useSellerListings.
+  // 2. If livingCommunity exists (and no sellerId), we might need to fetch all and filter 
+  //    (or add a new query param to backend). 
+  //    For now, let's reuse useListings if we can, or just fetch all and filter like before but via RQ.
+  
+  // Actually, useSellerListings is perfect if we have sellerId.
+  // If we have livingCommunity, we should probably fetch all listings (cached) and filter.
+  
+  const { data: listingsBySeller = [] } = useSellerListings(sellerId);
+  const { data: allListingsPages } = useListings({ limit: 100 }); // Fetch a reasonable amount if needed
+  
+  // Flatten all listings pages if we need to filter by community
+  const allListings = useMemo(() => {
+    return allListingsPages?.pages.flat() || [];
+  }, [allListingsPages]);
+
+  const sellerListings = useMemo(() => {
+    if (sellerId) {
+      return listingsBySeller.filter(p => ENABLE_TICKETS || p.category !== 'Tickets');
+    } 
+    if (livingCommunity) {
+      return allListings.filter(
+        (p) =>
+          (p.livingCommunity === livingCommunity || p.location === livingCommunity) &&
+          (ENABLE_TICKETS || p.category !== 'Tickets')
+      );
+    }
+    return [];
+  }, [sellerId, livingCommunity, listingsBySeller, allListings]);
 
   // Derive seller name from params or listings
   const sellerName = useMemo(() => {
@@ -46,28 +79,6 @@ export default function SellerProfileScreen() {
     }
     return 'ASU Student';
   }, [paramSellerName, sellerListings]);
-
-  // Get all listings by this seller: by sellerId when provided, else by livingCommunity
-  useEffect(() => {
-    let isMounted = true;
-    listingService.getAllListings().then((allListings) => {
-      if (!isMounted) return;
-      let filtered = [];
-      if (sellerId) {
-        filtered = allListings.filter(
-          (p) => p.sellerId === sellerId && (ENABLE_TICKETS || p.category !== 'Tickets')
-        );
-      } else if (livingCommunity) {
-        filtered = allListings.filter(
-          (p) =>
-            (p.livingCommunity === livingCommunity || p.location === livingCommunity) &&
-            (ENABLE_TICKETS || p.category !== 'Tickets')
-        );
-      }
-      setSellerListings(filtered);
-    });
-    return () => { isMounted = false; };
-  }, [sellerId, livingCommunity]);
 
   // Toggle Selection Mode
   const toggleSelectionMode = () => {

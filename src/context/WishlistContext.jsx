@@ -1,12 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import wishlistService from '../services/WishlistService';
 import auth from '../services/firebaseAuth';
+import { useWishlistQuery, useAddToWishlistMutation, useRemoveFromWishlistMutation } from '../hooks/queries/useWishlistQueries';
 
 const WishlistContext = createContext();
 
 export function WishlistProvider({ children }) {
-  const [wishlistItems, setWishlistItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -16,25 +15,23 @@ export function WishlistProvider({ children }) {
     return subscriber;
   }, []);
 
-  useEffect(() => {
-    if (!user) {
-      setWishlistItems([]);
-      setIsLoading(false);
-    }
-  }, [user]);
+  const { 
+    data: wishlistItems = [], 
+    isLoading, 
+    isRefetching,
+    refetch 
+  } = useWishlistQuery({ enabled: !!user });
+
+  const addMutation = useAddToWishlistMutation();
+  const removeMutation = useRemoveFromWishlistMutation();
 
   const loadWishlist = async () => {
-    try {
-      if (!user) return;
-      setIsLoading(true);
-      const items = await wishlistService.getWishlist();
-      setWishlistItems(items);
-    } catch (error) {
-      console.error('Failed to load wishlist:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    return refetch();
   };
+
+  const isInWishlist = useCallback((productId) => {
+    return wishlistItems.some((item) => item.id === productId);
+  }, [wishlistItems]);
 
   const addToWishlist = async (product) => {
     if (!product || !product.id || !user) return;
@@ -42,38 +39,12 @@ export function WishlistProvider({ children }) {
     // Check if already exists to avoid duplicates
     if (isInWishlist(product.id)) return;
 
-    // Optimistic update
-    const newItems = [product, ...wishlistItems];
-    setWishlistItems(newItems);
-
-    try {
-      await wishlistService.addToWishlist(product.id);
-    } catch (error) {
-      console.error('Failed to add to wishlist:', error);
-      // Revert on failure
-      setWishlistItems(wishlistItems);
-    }
+    addMutation.mutate({ listingId: product.id, product });
   };
 
   const removeFromWishlist = async (productId) => {
     if (!user) return;
-
-    // Optimistic update
-    const previousItems = [...wishlistItems];
-    const newItems = wishlistItems.filter((item) => item.id !== productId);
-    setWishlistItems(newItems);
-
-    try {
-      await wishlistService.removeFromWishlist(productId);
-    } catch (error) {
-      console.error('Failed to remove from wishlist:', error);
-      // Revert on failure
-      setWishlistItems(previousItems);
-    }
-  };
-
-  const isInWishlist = (productId) => {
-    return wishlistItems.some((item) => item.id === productId);
+    removeMutation.mutate(productId);
   };
 
   const toggleWishlist = async (product) => {
@@ -89,6 +60,7 @@ export function WishlistProvider({ children }) {
       value={{
         wishlistItems,
         isLoading,
+        isRefetching,
         loadWishlist,
         addToWishlist,
         removeFromWishlist,

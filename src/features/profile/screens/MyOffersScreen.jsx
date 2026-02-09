@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,9 +17,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
-import { offerService } from '../../../services/OfferService';
+import { useMyOffers } from '../../../hooks/queries/useOfferQueries';
 
 function formatDate(date) {
+  if (!date) return '';
   const now = new Date();
   const diffMs = now - date;
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -48,42 +49,34 @@ export default function MyOffersScreen() {
   const [selectedOffer, setSelectedOffer] = useState(null); // For detail modal
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedBundle, setSelectedBundle] = useState(null);
-  const [offers, setOffers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchMyOffers = useCallback(async (showLoader = true) => {
-    if (showLoader) setIsLoading(true);
-    try {
-      const data = await offerService.getMyOffers();
-      
-      // Transform backend data to match UI component expectations
-      const transformedOffers = data.map(offer => ({
-        ...offer,
-        type: offer.items.length > 1 ? 'bundle' : 'single',
-        totalValue: offer.items.reduce((sum, item) => sum + item.price, 0),
-        createdAt: new Date(offer.createdAt)
-      }));
-      
-      setOffers(transformedOffers);
-    } catch (error) {
-      console.error('Failed to fetch offers:', error);
-    } finally {
-      if (showLoader) setIsLoading(false);
-    }
-  }, []);
+  const { 
+    data: offersData = [], 
+    isLoading, 
+    refetch, 
+    isRefetching 
+  } = useMyOffers();
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchMyOffers(false);
-    setRefreshing(false);
-  }, [fetchMyOffers]);
-
+  // Refetch on focus to ensure data is up to date
   useFocusEffect(
     useCallback(() => {
-      fetchMyOffers();
-    }, [fetchMyOffers])
+      refetch();
+    }, [refetch])
   );
+
+  const onRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  // Transform backend data to match UI component expectations
+  const offers = useMemo(() => {
+    return offersData.map(offer => ({
+      ...offer,
+      type: offer.items.length > 1 ? 'bundle' : 'single',
+      totalValue: offer.items.reduce((sum, item) => sum + item.price, 0),
+      createdAt: new Date(offer.createdAt)
+    }));
+  }, [offersData]);
 
   // Filter offers based on active tab and filter
   const filteredOffers = useMemo(() => {
@@ -316,7 +309,7 @@ export default function MyOffersScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={isRefetching}
             onRefresh={onRefresh}
             tintColor={ASU.maroon} // iOS
             colors={[ASU.maroon]} // Android

@@ -1,8 +1,10 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { View, Text, TextInput, StyleSheet, Platform, TouchableOpacity, ScrollView, Modal, Pressable, RefreshControl, FlatList, ActivityIndicator, Keyboard } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import PagerView from 'react-native-pager-view';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
 import { ENABLE_TICKETS } from '../../../constants/featureFlags';
@@ -42,6 +44,116 @@ const LIVING_COMMUNITIES = [
 
 import { useFilters } from '../../../context/FilterContext';
 
+const CategoryListing = ({ 
+  category, 
+  index, 
+  sortId, 
+  searchQuery, 
+  filters,
+  theme,
+  styles,
+  onClearSearch
+}) => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isQueryLoading,
+    refetch
+  } = useInfiniteQuery({
+    queryKey: ['listings', index, sortId, searchQuery, filters],
+    queryFn: async ({ pageParam = 1 }) => {
+      const categoryParam = index === 0 ? null : category;
+      // Small delay for UX on initial load (first page)
+      if (pageParam === 1) await new Promise(resolve => setTimeout(resolve, 500));
+      return await listingService.getAllListings(pageParam, PAGE_SIZE, categoryParam, sortId, searchQuery);
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === PAGE_SIZE ? allPages.length + 1 : undefined;
+    },
+  });
+
+  const allProductsRaw = useMemo(() => data?.pages.flat() || [], [data]);
+
+  const allProducts = useMemo(() => {
+    let filtered = allProductsRaw;
+    if (filters.length > 0) {
+      filtered = allProductsRaw.filter(item => {
+        if (!item.livingCommunity) return false;
+        const community = LIVING_COMMUNITIES.find(c => c.label === item.livingCommunity);
+        return community && filters.includes(community.id);
+      });
+    }
+    return filtered;
+  }, [allProductsRaw, filters]);
+
+  const isLoading = isQueryLoading;
+  const loadingMore = isFetchingNextPage;
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetch]);
+
+  const loadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={theme.primary} />
+      </View>
+    );
+  };
+
+  if (isLoading && allProducts.length === 0) {
+    return (
+      <View style={styles.productsGrid}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <ProductTileSkeleton key={i} />
+        ))}
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={allProducts}
+      renderItem={({ item }) => <ProductTile product={item} />}
+      keyExtractor={(item) => item.id.toString()}
+      numColumns={2}
+      contentContainerStyle={styles.contentContainer}
+      columnWrapperStyle={styles.columnWrapper}
+      showsVerticalScrollIndicator={false}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={renderFooter}
+      ListEmptyComponent={
+        searchQuery ? (
+          <NoSearchResults query={searchQuery} onClear={onClearSearch} />
+        ) : (
+          <EmptyMarketplacePlaceholder category={index === 0 ? null : category} />
+        )
+      }
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+      }
+    />
+  );
+};
+
 export default function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -56,17 +168,30 @@ export default function DashboardScreen() {
   const categories = ENABLE_TICKETS ? [...baseCategories, 'Tickets'] : baseCategories;
   const [selectedSortId, setSelectedSortId] = useState('newest');
   const [sortModalVisible, setSortModalVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [submittedSearchQuery, setSubmittedSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const pagerRef = useRef(null);
+  const categoryListRef = useRef(null);
+
+  useEffect(() => {
+    if (selectedCategory >= 0 && selectedCategory < categories.length) {
+      categoryListRef.current?.scrollToIndex({
+        index: selectedCategory,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    }
+  }, [selectedCategory, categories.length]);
   
-  // Pagination State
-  const [allProducts, setAllProducts] = useState([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const handlePageSelected = (e) => {
+    setSelectedCategory(e.nativeEvent.position);
+  };
+
+  const handleCategoryPress = (index) => {
+    setSelectedCategory(index);
+    pagerRef.current?.setPage(index);
+  };
 
   const handleSearchSubmit = () => {
     Keyboard.dismiss();
@@ -83,74 +208,6 @@ export default function DashboardScreen() {
 
   const removeFilter = (id) => {
     setSelectedLivingCommunities(prev => prev.filter(c => c !== id));
-  };
-
-  const fetchListings = useCallback(async (reset = false) => {
-    if (loadingMore) return;
-    
-    const nextPage = reset ? 1 : page + 1;
-    if (!reset && !hasMore) return;
-
-    if (reset) {
-      setIsLoading(true);
-      setAllProducts([]); // Clear current products to show skeletons
-    } else {
-      setLoadingMore(true);
-    }
-
-    try {
-      if (reset) await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
-      
-      const categoryName = categories[selectedCategory];
-      // If "All" is selected (index 0), send null/undefined to backend to search everything
-      const categoryParam = selectedCategory === 0 ? null : categoryName;
-      
-      const data = await listingService.getAllListings(nextPage, PAGE_SIZE, categoryParam, selectedSortId, submittedSearchQuery);
-
-      let filteredData = data;
-      // Apply client-side filtering for living communities
-      if (selectedLivingCommunities.length > 0) {
-        filteredData = data.filter(item => {
-          if (!item.livingCommunity) return false;
-          // Find the ID for the item's living community label
-          const community = LIVING_COMMUNITIES.find(c => c.label === item.livingCommunity);
-          return community && selectedLivingCommunities.includes(community.id);
-        });
-      }
-      
-      if (reset) {
-        setAllProducts(filteredData);
-        setPage(1);
-      } else {
-        setAllProducts(prev => [...prev, ...filteredData]);
-        setPage(nextPage);
-      }
-      
-      setHasMore(data.length === PAGE_SIZE);
-    } catch (error) {
-      console.error('Failed to fetch listings:', error);
-    } finally {
-      setIsLoading(false);
-      setLoadingMore(false);
-      if (reset) setIsRefreshing(false);
-      if (reset && submittedSearchQuery) setIsSearching(false);
-    }
-  }, [selectedCategory, selectedSortId, page, hasMore, loadingMore, categories, submittedSearchQuery]);
-
-  // Initial load and filter change
-  useEffect(() => {
-    fetchListings(true);
-  }, [selectedCategory, selectedSortId, submittedSearchQuery, selectedLivingCommunities]);
-
-  const onRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    await fetchListings(true);
-  }, [fetchListings]);
-
-  const loadMore = () => {
-    if (!isLoading && !loadingMore && hasMore) {
-      fetchListings(false);
-    }
   };
 
   const getCategoryContent = (index) => {
@@ -186,43 +243,52 @@ export default function DashboardScreen() {
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
       <View style={styles.headerContainer}>
-        <ScrollView
+        <FlatList
+          ref={categoryListRef}
+          data={categories}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipsContainer}
           style={styles.chipsScrollView}
-        >
-        {/* Chips should not show skeletons during standard loading/refreshing to avoid flickering UI */}
-        {categories.map((category, index) => {
-          const isSelected = selectedCategory === index;
-          return (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.chip,
-                isSelected && styles.chipSelected,
-              ]}
-              activeOpacity={0.7}
-              onPress={() => setSelectedCategory(index)}
-            >
-              <Ionicons 
-                name={CATEGORY_ICONS[category] || 'pricetag-outline'} 
-                size={16} 
-                color={isSelected ? ASU.white : theme.text} 
-                style={{ marginRight: 6 }}
-              />
-              <Text
+          keyExtractor={(item) => item}
+          onScrollToIndexFailed={(info) => {
+            const wait = new Promise(resolve => setTimeout(resolve, 500));
+            wait.then(() => {
+              categoryListRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 });
+            });
+          }}
+          renderItem={({ item: category, index }) => {
+            const isSelected = selectedCategory === index;
+            return (
+              <TouchableOpacity
                 style={[
-                  styles.chipText,
-                  isSelected && styles.chipTextSelected,
+                  styles.chip,
+                  isSelected && styles.chipSelected,
                 ]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setSelectedCategory(index);
+                  pagerRef.current?.setPage(index);
+                }}
               >
-                {category}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-        </ScrollView>
+                <Ionicons 
+                  name={CATEGORY_ICONS[category] || 'pricetag-outline'} 
+                  size={16} 
+                  color={isSelected ? ASU.white : theme.text} 
+                  style={{ marginRight: 6 }}
+                />
+                <Text
+                  style={[
+                    styles.chipText,
+                    isSelected && styles.chipTextSelected,
+                  ]}
+                >
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
 
         <View style={styles.searchRow}>
           <View style={styles.searchBarWrapper}>
@@ -275,36 +341,27 @@ export default function DashboardScreen() {
         </View>
       </View>
       
-      {isLoading && allProducts.length === 0 ? (
-         <View style={styles.productsGrid}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <ProductTileSkeleton key={i} />
-            ))}
-         </View>
-      ) : (
-        <FlatList
-          data={allProducts}
-          renderItem={({ item }) => <ProductTile product={item} />}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={2}
-          contentContainerStyle={styles.contentContainer}
-          columnWrapperStyle={styles.columnWrapper}
-          showsVerticalScrollIndicator={false}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={renderFooter}
-          ListEmptyComponent={
-            submittedSearchQuery ? (
-              <NoSearchResults query={submittedSearchQuery} onClear={handleClearSearch} />
-            ) : (
-              <EmptyMarketplacePlaceholder category={selectedCategory === 0 ? null : categories[selectedCategory]} />
-            )
-          }
-          refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={theme.primary} />
-          }
-        />
-      )}
+      <PagerView
+        ref={pagerRef}
+        style={{ flex: 1 }}
+        initialPage={0}
+        onPageSelected={handlePageSelected}
+      >
+        {categories.map((category, index) => (
+          <View key={index} style={{ flex: 1 }}>
+            <CategoryListing
+              category={category}
+              index={index}
+              sortId={selectedSortId}
+              searchQuery={submittedSearchQuery}
+              filters={selectedLivingCommunities}
+              theme={theme}
+              styles={styles}
+              onClearSearch={handleClearSearch}
+            />
+          </View>
+        ))}
+      </PagerView>
 
       <Modal
         visible={sortModalVisible}

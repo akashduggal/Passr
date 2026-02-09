@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { Stack, useRouter, useRootNavigationState, usePathname } from 'expo-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { FilterProvider } from '../src/context/FilterContext';
@@ -12,6 +13,8 @@ import AppSplashScreen from '../src/components/AppSplashScreen';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient();
 
 function useNotificationObserver() {
   const router = useRouter();
@@ -148,8 +151,9 @@ export default function Layout() {
   }, [isAppReady]);
 
   return (
-    <ThemeProvider>
-      <NotificationProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <NotificationProvider>
         <FilterProvider>
           <WishlistProvider>
             <ToastProvider>
@@ -289,7 +293,8 @@ export default function Layout() {
           </WishlistProvider>
         </FilterProvider>
       </NotificationProvider>
-  </ThemeProvider>
+    </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

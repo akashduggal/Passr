@@ -28,6 +28,8 @@ import { listingService } from '../../../services/ListingService';
 import { offerService } from '../../../services/OfferService';
 import auth from '../../../services/firebaseAuth';
 import { formatRelativeTime, formatExpiryTime } from '../../../utils/dateUtils';
+import { useSellerListings } from '../../../hooks/queries/useListingQueries';
+import { useMyOffers } from '../../../hooks/queries/useOfferQueries';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CAROUSEL_HEIGHT = 300;
@@ -103,7 +105,16 @@ export default function ProductDetailScreen() {
   const currentUser = auth().currentUser;
   const isViewerSeller = sellerId === (currentUser?.uid || CURRENT_USER_ID);
   const isSold = !!product.sold;
-  const [existingOffer, setExistingOffer] = useState(null);
+
+  const { data: myOffers = [] } = useMyOffers();
+  const existingOffer = useMemo(() => {
+    if (isViewerSeller) return null;
+    return myOffers.find(o => 
+      (o.status === 'pending' || o.status === 'accepted') &&
+      o.items.some(item => item.id === product.id)
+    );
+  }, [myOffers, product.id, isViewerSeller]);
+
   const showMakeOffer = !isViewerSeller && !isSold && !existingOffer;
   const showGoToChat = !isViewerSeller && !isSold && existingOffer;
   const showWishlist = !isViewerSeller;
@@ -114,32 +125,6 @@ export default function ProductDetailScreen() {
   const [offerPrice, setOfferPrice] = useState(() => product.price || 0);
   const [fullScreenImageIndex, setFullScreenImageIndex] = useState(null);
   const [fullScreenViewedIndex, setFullScreenViewedIndex] = useState(0);
-
-  // Check for existing offers
-  useEffect(() => {
-    let isMounted = true;
-    if (isViewerSeller) return;
-
-    const checkExistingOffer = async () => {
-      try {
-        const myOffers = await offerService.getMyOffers();
-        if (!isMounted) return;
-        
-        // Find if any offer includes this product and is active (pending or accepted)
-        const found = myOffers.find(o => 
-          (o.status === 'pending' || o.status === 'accepted') &&
-          o.items.some(item => item.id === product.id)
-        );
-        
-        setExistingOffer(found);
-      } catch (error) {
-        console.error('Failed to check existing offers:', error);
-      }
-    };
-
-    checkExistingOffer();
-    return () => { isMounted = false; };
-  }, [product.id, isViewerSeller]);
 
   const openFullScreenImage = (index) => {
     setFullScreenImageIndex(index);
@@ -166,28 +151,17 @@ export default function ProductDetailScreen() {
   };
 
   // Get seller's other listings (same sellerId, exclude current product)
-  const [allSellerListings, setAllSellerListings] = useState([]);
-
-  useEffect(() => {
-    let isMounted = true;
-    if (!sellerId) {
-      setAllSellerListings([]);
-      return;
-    }
+  const { data: sellerListingsRaw = [] } = useSellerListings(sellerId);
+  
+  const allSellerListings = useMemo(() => {
+    if (!sellerId) return [];
     
-    listingService.getAllListings().then((listings) => {
-      if (!isMounted) return;
-      const filtered = listings.filter(
-        (p) =>
-          p.id !== product.id &&
-          p.sellerId === sellerId &&
-          (ENABLE_TICKETS || p.category !== 'Tickets')
-      );
-      setAllSellerListings(filtered);
-    });
-    
-    return () => { isMounted = false; };
-  }, [product.id, sellerId]);
+    return sellerListingsRaw.filter(
+      (p) =>
+        p.id !== product.id &&
+        (ENABLE_TICKETS || p.category !== 'Tickets')
+    );
+  }, [sellerListingsRaw, product.id, sellerId]);
 
   /** Resolve detail-view URI for carousel (WebP detail variant or legacy string). */
   const getDetailUri = (slot) => {

@@ -22,6 +22,7 @@ import { getTheme, ASU } from '../../../theme';
 import { ENABLE_TICKETS } from '../../../constants/featureFlags';
 import { compressListingImage } from '../../../utils/imageCompression';
 import { listingService } from '../../../services/ListingService';
+import { useCreateListing, useUpdateListing } from '../../../hooks/queries/useListingQueries';
 
 const BASE_CATEGORIES = ['Furniture', 'Electronics', 'Escooters', 'Kitchen'];
 const CATEGORIES = ENABLE_TICKETS ? [...BASE_CATEGORIES, 'Tickets'] : BASE_CATEGORIES;
@@ -92,6 +93,9 @@ export default function AddListingScreen({ isTab = false }) {
   const [brandPickerVisible, setBrandPickerVisible] = useState(false);
   const insets = useSafeAreaInsets();
   const styles = getStyles(theme, insets);
+
+  const createListingMutation = useCreateListing();
+  const updateListingMutation = useUpdateListing();
 
   const selectedCategoryLabel = selectedCategory ?? 'e.g. Furniture';
   const selectedLabel = selectedCommunity
@@ -378,7 +382,7 @@ export default function AddListingScreen({ isTab = false }) {
       };
 
       if (isEditing) {
-        await listingService.updateListing({
+        await updateListingMutation.mutateAsync({
           ...listingData,
           id: editingListing.id,
         });
@@ -395,7 +399,7 @@ export default function AddListingScreen({ isTab = false }) {
           },
         ]);
       } else {
-        await listingService.addListing(listingData);
+        await createListingMutation.mutateAsync(listingData);
         Alert.alert('Success', 'Listing posted successfully!', [
           {
             text: 'OK',

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,7 +12,7 @@ export default function MyWishlistScreen() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme);
-  const { wishlistItems, isLoading } = useWishlist();
+  const { wishlistItems, isLoading, isRefetching, loadWishlist } = useWishlist();
   
   if (isLoading) {
     return (
@@ -47,7 +47,12 @@ export default function MyWishlistScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+            <RefreshControl refreshing={!!isRefetching} onRefresh={loadWishlist} tintColor={ASU.maroon} />
+        }
+      >
         <View style={styles.productsGrid}>
           {wishlistItems.map((item) => (
             <ProductTile key={item.id} product={item} />
