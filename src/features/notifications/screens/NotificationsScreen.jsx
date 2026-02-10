@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { useNotifications } from '../../../context/NotificationContext';
@@ -112,6 +113,36 @@ export default function NotificationsScreen() {
     }
   };
 
+  const renderRightActions = (progress, dragX, id) => {
+    return (
+      <View style={styles.deleteActionContainer}>
+        <TouchableOpacity
+          style={styles.deleteAction}
+          onPress={() => deleteNotification(id)}
+        >
+          <Ionicons name="trash-outline" size={24} color="#fff" />
+          <Text style={styles.actionText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderLeftActions = (progress, dragX, n) => {
+    if (n.read) return null;
+    
+    return (
+      <View style={styles.readActionContainer}>
+        <TouchableOpacity
+          style={styles.readAction}
+          onPress={() => markAsRead(n.id)}
+        >
+          <Ionicons name="checkmark-done-outline" size={24} color="#fff" />
+          <Text style={styles.actionText}>Read</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView
@@ -143,57 +174,62 @@ export default function NotificationsScreen() {
               {items.map((n) => {
                 const config = NOTIFICATION_TYPES[n.type] ?? NOTIFICATION_TYPES.message;
                 return (
-                  <TouchableOpacity
+                  <Swipeable
                     key={n.id}
-                    style={[
-                      styles.card,
-                      { backgroundColor: theme.surface, borderColor: theme.border },
-                      !n.read && styles.cardUnread,
-                    ]}
-                    onPress={() => handleNotificationPress(n)}
-                    activeOpacity={0.7}
+                    renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, n.id)}
+                    renderLeftActions={(progress, dragX) => renderLeftActions(progress, dragX, n)}
                   >
-                    <View style={[styles.iconWrap, { backgroundColor: config.iconBg }]}>
-                      <Ionicons
-                        name={config.icon}
-                        size={22}
-                        color={config.iconColor}
-                      />
-                    </View>
-                    <View style={styles.cardContent}>
-                      <View style={styles.cardHeader}>
-                        <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={1}>
-                          {n.title}
-                        </Text>
-                        <Text style={[styles.cardTime, { color: theme.textSecondary }]}>
-                          {formatTime(n.createdAt)}
-                        </Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.card,
+                        { backgroundColor: theme.surface, borderColor: theme.border },
+                        !n.read && styles.cardUnread,
+                      ]}
+                      onPress={() => handleNotificationPress(n)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.iconWrap, { backgroundColor: config.iconBg }]}>
+                        <Ionicons
+                          name={config.icon}
+                          size={22}
+                          color={config.iconColor}
+                        />
                       </View>
-                      <Text
-                        style={[styles.cardBody, { color: theme.textSecondary }]}
-                        numberOfLines={2}
-                      >
-                        {n.body}
-                      </Text>
-                      {n.listingTitle && (
-                        <View style={styles.listingTag}>
-                          <Ionicons
-                            name="pricetag-outline"
-                            size={14}
-                            color={theme.textSecondary}
-                            style={styles.listingTagIcon}
-                          />
-                          <Text
-                            style={[styles.listingTagText, { color: theme.textSecondary }]}
-                            numberOfLines={1}
-                          >
-                            {n.listingTitle}
+                      <View style={styles.cardContent}>
+                        <View style={styles.cardHeader}>
+                          <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={1}>
+                            {n.title}
+                          </Text>
+                          <Text style={[styles.cardTime, { color: theme.textSecondary }]}>
+                            {formatTime(n.createdAt)}
                           </Text>
                         </View>
-                      )}
-                    </View>
-                    {!n.read && <View style={styles.unreadDot} />}
-                  </TouchableOpacity>
+                        <Text
+                          style={[styles.cardBody, { color: theme.textSecondary }]}
+                          numberOfLines={2}
+                        >
+                          {n.body}
+                        </Text>
+                        {n.listingTitle && (
+                          <View style={styles.listingTag}>
+                            <Ionicons
+                              name="pricetag-outline"
+                              size={14}
+                              color={theme.textSecondary}
+                              style={styles.listingTagIcon}
+                            />
+                            <Text
+                              style={[styles.listingTagText, { color: theme.textSecondary }]}
+                              numberOfLines={1}
+                            >
+                              {n.listingTitle}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      {!n.read && <View style={styles.unreadDot} />}
+                    </TouchableOpacity>
+                  </Swipeable>
                 );
               })}
             </View>
@@ -324,5 +360,37 @@ const getStyles = (theme) =>
       backgroundColor: theme.primary,
       marginLeft: 8,
       marginTop: 6,
+    },
+    deleteActionContainer: {
+      width: 80,
+      marginBottom: 10,
+      borderTopRightRadius: 12,
+      borderBottomRightRadius: 12,
+      overflow: 'hidden',
+    },
+    deleteAction: {
+      flex: 1,
+      backgroundColor: ASU.error,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    readActionContainer: {
+      width: 80,
+      marginBottom: 10,
+      borderTopLeftRadius: 12,
+      borderBottomLeftRadius: 12,
+      overflow: 'hidden',
+    },
+    readAction: {
+      flex: 1,
+      backgroundColor: ASU.blue,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    actionText: {
+      color: 'white',
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 4,
     },
   });

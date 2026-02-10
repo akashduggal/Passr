@@ -86,3 +86,28 @@ export function useMarkAllAsReadMutation() {
     },
   });
 }
+
+export function useDeleteNotificationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => notificationService.deleteNotification(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: notificationKeys.list() });
+      const previousNotifications = queryClient.getQueryData(notificationKeys.list());
+      
+      if (previousNotifications) {
+        queryClient.setQueryData(notificationKeys.list(), (old) => 
+          old.filter(n => n.id !== id)
+        );
+      }
+      return { previousNotifications };
+    },
+    onError: (err, newTodo, context) => {
+      queryClient.setQueryData(notificationKeys.list(), context.previousNotifications);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.list() });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+    },
+  });
+}

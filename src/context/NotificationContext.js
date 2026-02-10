@@ -4,7 +4,7 @@ import { notificationService } from '../services/NotificationService';
 import { addNotificationListeners } from '../services/PushNotificationService';
 import userService from '../services/UserService';
 import auth from '../services/firebaseAuth';
-import { useNotificationsQuery, useMarkAsReadMutation, useMarkAllAsReadMutation, notificationKeys } from '../hooks/queries/useNotificationQueries';
+import { useNotificationsQuery, useMarkAsReadMutation, useMarkAllAsReadMutation, useDeleteNotificationMutation, notificationKeys } from '../hooks/queries/useNotificationQueries';
 import { useQueryClient } from '@tanstack/react-query';
 
 const NotificationContext = createContext();
@@ -30,6 +30,7 @@ export const NotificationProvider = ({ children }) => {
 
   const markAsReadMutation = useMarkAsReadMutation();
   const markAllAsReadMutation = useMarkAllAsReadMutation();
+  const deleteNotificationMutation = useDeleteNotificationMutation();
 
   const unreadCount = useMemo(() => {
     return notifications.filter(n => !n.read).length;

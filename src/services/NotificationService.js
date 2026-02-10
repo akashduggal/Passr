@@ -98,6 +98,20 @@ class NotificationService {
     }
   }
 
+  async deleteNotification(id) {
+    try {
+      const headers = await this.getHeaders();
+      const response = await fetch(`${this.baseUrl}/api/notifications/${id}`, {
+        method: 'DELETE',
+        headers,
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('NotificationService.deleteNotification error:', error);
+      throw error;
+    }
+  }
+
   async markAllAsRead() {
     try {
       const headers = await this.getHeaders();
