@@ -30,6 +30,7 @@ import auth from '../../../services/firebaseAuth';
 import { formatRelativeTime, formatExpiryTime } from '../../../utils/dateUtils';
 import { useSellerListings } from '../../../hooks/queries/useListingQueries';
 import { useMyOffers } from '../../../hooks/queries/useOfferQueries';
+import { supabase } from '../../../services/supabase';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CAROUSEL_HEIGHT = 300;
@@ -78,6 +79,30 @@ export default function ProductDetailScreen() {
 
   const product = params.product ? JSON.parse(params.product) : null;
 
+  // Track View Item Event
+  useEffect(() => {
+    if (product?.id) {
+      const logView = async () => {
+        try {
+          const { error } = await supabase.from('analytics_events').insert({
+            event_type: 'view_item',
+            event_data: { 
+              listing_id: product.id, 
+              category: product.category,
+              price: product.price 
+            },
+            user_id: auth().currentUser?.uid || null
+          });
+          if (error) console.log('Analytics Insert Error:', error);
+        } catch (err) {
+          // Silent fail for analytics
+          console.log('Analytics error:', err);
+        }
+      };
+      logView();
+    }
+  }, [product?.id]);
+
   if (!product) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -125,6 +150,8 @@ export default function ProductDetailScreen() {
   const [offerPrice, setOfferPrice] = useState(() => product.price || 0);
   const [fullScreenImageIndex, setFullScreenImageIndex] = useState(null);
   const [fullScreenViewedIndex, setFullScreenViewedIndex] = useState(0);
+
+
 
   const openFullScreenImage = (index) => {
     setFullScreenImageIndex(index);

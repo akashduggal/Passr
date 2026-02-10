@@ -15,6 +15,8 @@ import EmptyMarketplacePlaceholder from '../components/EmptyMarketplacePlacehold
 import NoSearchResults from '../components/NoSearchResults';
 import { listingService } from '../../../services/ListingService';
 import { useListings } from '../../../hooks/queries/useListingQueries';
+import { supabase } from '../../../services/supabase';
+import auth from '../../../services/firebaseAuth';
 
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest First' },
@@ -195,6 +197,19 @@ export default function DashboardScreen() {
     Keyboard.dismiss();
     setSubmittedSearchQuery(searchQuery);
     setIsSearching(true);
+
+    // Track Search Event
+    if (searchQuery.trim()) {
+      supabase.from('analytics_events').insert({
+        event_type: 'search',
+        event_data: { query: searchQuery },
+        user_id: auth().currentUser?.uid || null
+      }).then(({ error }) => {
+        if (error) console.log('Analytics Insert Error:', error);
+        else console.log('Search logged:', searchQuery);
+      })
+      .catch(err => console.log('Analytics error:', err));
+    }
   };
 
   const handleClearSearch = () => {
