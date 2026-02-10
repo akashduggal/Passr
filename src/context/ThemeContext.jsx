@@ -21,10 +21,12 @@ export const ThemeProvider = ({ children }) => {
 
   const loadTheme = async () => {
     try {
-      const savedTheme = await AsyncStorage.getItem('theme_preference');
-      if (savedTheme !== null) {
-        setIsDarkMode(savedTheme === 'dark');
-      }
+      // Force light mode by not loading saved theme preference
+      // const savedTheme = await AsyncStorage.getItem('theme_preference');
+      // if (savedTheme !== null) {
+      //   setIsDarkMode(savedTheme === 'dark');
+      // }
+      setIsDarkMode(false);
     } catch (e) {
       console.error('Failed to load theme preference', e);
     } finally {
@@ -33,6 +35,8 @@ export const ThemeProvider = ({ children }) => {
   };
 
   const toggleTheme = async () => {
+    // Disabled dark mode toggle
+    /*
     try {
       const newMode = !isDarkMode;
       setIsDarkMode(newMode);
@@ -40,6 +44,7 @@ export const ThemeProvider = ({ children }) => {
     } catch (e) {
       console.error('Failed to save theme preference', e);
     }
+    */
   };
 
   return (

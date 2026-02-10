@@ -223,7 +223,8 @@ export default function UserProfileScreen({ isTab = false }) {
             />
           </View>
 
-          {/* Dark Mode Toggle */}
+          {/* Dark Mode Toggle - Hidden as we enforce light theme */}
+          {/* 
           <View style={{ 
             flexDirection: 'row', 
             justifyContent: 'space-between', 
@@ -245,7 +246,8 @@ export default function UserProfileScreen({ isTab = false }) {
               trackColor={{ false: theme.gray6, true: ASU.maroon }}
               thumbColor={ASU.white}
             />
-          </View>
+          </View> 
+          */}
         </View>
 
         <View style={[styles.appFooter, { paddingBottom: Math.max(insets.bottom, 16) }]}>

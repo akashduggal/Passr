@@ -290,6 +290,44 @@ export default function ProductDetailScreen() {
           </View>
         </View>
 
+        {/* Sustainability Score */}
+        {product.sustainabilityScore > 0 && (
+          <View style={styles.section}>
+             <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 12}}>
+                <Ionicons name="leaf" size={20} color="green" style={{marginRight: 8}} />
+                <Text style={styles.sectionTitle}>Sustainability Impact</Text>
+             </View>
+             
+             <View style={{backgroundColor: theme.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.border}}>
+                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8}}>
+                    <Text style={{fontSize: 16, fontWeight: '600', color: theme.text}}>Eco-Score</Text>
+                    <View style={{backgroundColor: 'green', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8}}>
+                        <Text style={{color: 'white', fontWeight: 'bold'}}>{product.sustainabilityScore}/100</Text>
+                    </View>
+                </View>
+                
+                {product.ecoImpactData?.estimatedSavings?.co2 && (
+                    <Text style={{color: theme.textSecondary, marginTop: 4}}>
+                        🌱 Est. CO2 Saved: {product.ecoImpactData.estimatedSavings.co2}
+                    </Text>
+                )}
+                 {product.ecoImpactData?.estimatedSavings?.water && (
+                    <Text style={{color: theme.textSecondary, marginTop: 4}}>
+                        💧 Est. Water Saved: {product.ecoImpactData.estimatedSavings.water}
+                    </Text>
+                )}
+                
+                {product.ecoImpactData?.estimatedSavings?.source && (
+                    <View style={{marginTop: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.border}}>
+                        <Text style={{fontSize: 10, color: theme.textSecondary, fontStyle: 'italic'}}>
+                            Source: {product.ecoImpactData.estimatedSavings.source}
+                        </Text>
+                    </View>
+                )}
+             </View>
+          </View>
+        )}
+
         {/* Seller */}
         <View style={styles.section}>
           <SellerInfoCard

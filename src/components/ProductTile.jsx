@@ -72,7 +72,15 @@ export default function ProductTile({ product, style, onPress, disabled }) {
           {product.title}
         </Text>
         <View style={[styles.productMeta, { justifyContent: 'space-between' }]}>
-          <Text style={styles.productCondition}>{product.condition}</Text>
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <Text style={styles.productCondition}>{product.condition}</Text>
+            {product.sustainabilityScore > 50 && (
+                <View style={{flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: '#e8f5e9', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4}}>
+                    <Ionicons name="leaf" size={10} color="green" />
+                    <Text style={{fontSize: 10, color: 'green', marginLeft: 2, fontWeight: 'bold'}}>{product.sustainabilityScore}</Text>
+                </View>
+            )}
+          </View>
           {isViewerSeller && product.expiresAt && (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="time-outline" size={12} color={ASU.maroon} style={{ marginRight: 2 }} />
