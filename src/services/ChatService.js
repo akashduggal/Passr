@@ -137,7 +137,24 @@ class ChatService {
   }
 
   /**
-   * Send a message in a chat
+   * Update user presence in chat
+   * @param {string|null} activeChatId 
+   */
+  async updatePresence(activeChatId) {
+    try {
+      const headers = await userService.getHeaders();
+      await fetch(`${userService.baseUrl}/api/chats/presence`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ activeChatId })
+      });
+    } catch (error) {
+      console.error('ChatService.updatePresence error:', error);
+    }
+  }
+
+  /**
+   * Send a message
    * @param {string} chatId 
    * @param {string} text 
    * @param {string} image - Optional base64 or URL

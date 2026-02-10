@@ -13,6 +13,7 @@ import {
   Alert,
   RefreshControl,
   ActivityIndicator,
+  AppState,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -55,6 +56,7 @@ import { listingService } from '../../../services/ListingService';
 import { chatService } from '../../../services/ChatService';
 import { offerService } from '../../../services/OfferService';
 import { addNotificationListeners, setActiveChatId } from '../../../services/PushNotificationService';
+import { supabase } from '../../../services/supabase';
 import auth from '../../../services/firebaseAuth';
 import { useMessages, useSendMessage, useCreateChat, chatKeys } from '../../../hooks/queries/useChatQueries';
 import { useAcceptOffer, useRejectOffer } from '../../../hooks/queries/useOfferQueries';
@@ -151,7 +153,7 @@ export default function ChatScreen() {
                 console.log("OFFER DETAILS ::", data)
                 if (data) {
                     setOfferDetails(data);
-                    if (data.status === 'accepted') {
+                    if (data.status === 'accepted' || data.status === 'sold') {
                         setOfferAccepted(true);
                     }
                 }
@@ -162,6 +164,37 @@ export default function ChatScreen() {
             }
         };
         fetchOffer();
+
+        // Subscribe to offer status changes (Real-time)
+        const channel = supabase
+          .channel(`offer_status:${params.offerId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'offers',
+              filter: `id=eq.${params.offerId}`,
+            },
+            (payload) => {
+              console.log('Realtime offer update:', payload);
+              if (payload.new) {
+                setOfferDetails(prev => ({ ...prev, ...payload.new }));
+                if (payload.new.status === 'accepted' || payload.new.status === 'sold') {
+                  setOfferAccepted(true);
+                  // Refresh messages to show system messages if any
+                  if (chatId) {
+                    queryClient.invalidateQueries({ queryKey: chatKeys.messages(chatId) });
+                  }
+                }
+              }
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
     } else {
         setIsLoadingOffer(false);
     }
@@ -180,7 +213,7 @@ export default function ChatScreen() {
           const offer = await offerService.getOfferById(params.offerId);
           if (offer) {
             setOfferDetails(offer);
-            if (offer.status === 'accepted') {
+            if (offer.status === 'accepted' || offer.status === 'sold') {
                 setOfferAccepted(true);
             }
           }
@@ -238,6 +271,8 @@ export default function ChatScreen() {
     if (chatId) {
       // Mark this chat as active globally to silence notifications
       setActiveChatId(chatId);
+      // Mark this chat as active in backend to silence push notifications
+      chatService.updatePresence(chatId);
 
       // Subscribe to real-time messages
       const subscription = chatService.subscribeToMessages(chatId, (newMessage) => {
@@ -251,10 +286,30 @@ export default function ChatScreen() {
 
       return () => {
         setActiveChatId(null);
+        chatService.updatePresence(null);
         subscription.unsubscribe();
       };
     }
   }, [chatId, currentUser, isSeller]);
+
+  // Handle app state changes (background/foreground) to manage presence
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      if (chatId) {
+        if (nextAppState === 'active') {
+          chatService.updatePresence(chatId);
+        } else {
+          chatService.updatePresence(null);
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [chatId]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -285,6 +340,57 @@ export default function ChatScreen() {
         listingService.getListingById(listingId).then(setListing);
     }
   }, [listingId, refreshing]);
+
+  // Subscribe to Listing changes
+  useEffect(() => {
+    if (listingId) {
+        const channel = supabase
+          .channel(`listing_status:${listingId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'listings',
+              filter: `id=eq.${listingId}`,
+            },
+            async (payload) => {
+              if (payload.new) {
+                console.log('Realtime listing update:', payload.new);
+                setListing(prev => ({ ...prev, ...payload.new }));
+                
+                // If listing is sold, refresh offer details to get updated status
+                if (payload.new.sold) {
+                    // Refresh messages to show system messages
+                    if (chatId) {
+                        queryClient.invalidateQueries({ queryKey: chatKeys.messages(chatId) });
+                    }
+                    
+                    // Refresh offer details if we have an offerId
+                    if (params.offerId) {
+                        try {
+                            const updatedOffer = await offerService.getOfferById(params.offerId);
+                            if (updatedOffer) {
+                                setOfferDetails(updatedOffer);
+                                if (updatedOffer.status === 'accepted' || updatedOffer.status === 'sold') {
+                                    setOfferAccepted(true);
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Failed to refresh offer on listing update", e);
+                        }
+                    }
+                }
+              }
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+    }
+  }, [listingId, params.offerId, chatId]);
 
   const handleMarkAsSold = async () => {
     Alert.alert(
