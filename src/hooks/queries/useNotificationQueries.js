@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '../../services/NotificationService';
+import auth from '../../services/firebaseAuth';
 
 export const notificationKeys = {
   all: ['notifications'],
@@ -8,6 +9,7 @@ export const notificationKeys = {
 };
 
 export function useNotificationsQuery() {
+  const user = auth().currentUser;
   return useQuery({
     queryKey: notificationKeys.list(),
     queryFn: async () => {
@@ -17,16 +19,19 @@ export function useNotificationsQuery() {
     },
     // Refetch periodically to keep notifications fresh
     refetchInterval: 30000, 
+    enabled: !!user,
   });
 }
 
 export function useUnreadCountQuery() {
   // We can either fetch separately or derive from the list query if it's already cached.
   // For now, let's fetch separately to be robust, or just rely on the list query if we use select.
+  const user = auth().currentUser;
   return useQuery({
     queryKey: notificationKeys.unreadCount(),
     queryFn: () => notificationService.getUnreadCount(),
     // Sync with list
+    enabled: !!user,
   });
 }
 

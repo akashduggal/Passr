@@ -68,7 +68,13 @@ export default function LoginScreen() {
       await auth().signInWithCredential(googleCredential);
       
       // Register for push notifications
-      const expoPushToken = await registerForPushNotificationsAsync();
+      let expoPushToken = null;
+      try {
+        expoPushToken = await registerForPushNotificationsAsync();
+        console.log('LoginScreen: Got push token:', expoPushToken);
+      } catch (pushError) {
+        console.error('LoginScreen: Push registration failed', pushError);
+      }
 
       // Sync user with backend
       await UserService.syncUser({

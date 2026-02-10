@@ -65,13 +65,13 @@ export async function registerForPushNotificationsAsync() {
       // Get the Expo Push Token (requires projectId from app.json/eas.json)
       const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
       
-      if (!projectId) {
-        console.warn('Project ID not found in app.json or eas.json. Ensure EAS is configured.');
-      }
-
-      token = (await Notifications.getExpoPushTokenAsync({
-        projectId,
-      })).data;
+      // NOTE: In Expo Go, we don't strictly need projectId, but for standalone apps we do.
+      // If we are in Expo Go, we can let getExpoPushTokenAsync infer it or handle it gracefully.
+      
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId, 
+      });
+      token = tokenData.data;
       
       console.log('Expo Push Token:', token);
     } catch (e) {
