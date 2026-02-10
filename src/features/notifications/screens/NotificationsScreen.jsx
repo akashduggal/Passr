@@ -77,7 +77,7 @@ export default function NotificationsScreen() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
   const styles = getStyles(theme);
-  const { notifications, markAsRead, loading, fetchNotifications } = useNotifications();
+  const { notifications, markAsRead, deleteNotification, loading, fetchNotifications } = useNotifications();
 
   const grouped = useMemo(() => {
     // Notifications are already sorted by date in context, but let's be safe

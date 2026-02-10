@@ -87,6 +87,10 @@ export const NotificationProvider = ({ children }) => {
     markAllAsReadMutation.mutate();
   };
 
+  const deleteNotification = (id) => {
+    deleteNotificationMutation.mutate(id);
+  };
+
   return (
     <NotificationContext.Provider
       value={{
@@ -96,6 +100,7 @@ export const NotificationProvider = ({ children }) => {
         fetchNotifications,
         markAsRead,
         markAllAsRead,
+        deleteNotification,
       }}
     >
       {children}
