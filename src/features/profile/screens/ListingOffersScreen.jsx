@@ -70,22 +70,30 @@ export default function ListingOffersScreen() {
   }, [offersData]);
 
   const handleAcceptOffer = async (offer) => {
+    if (processingOfferId) return;
+    setProcessingOfferId(offer.id);
     try {
       await acceptOfferMutation.mutateAsync(offer.id);
       handleChat(offer);
     } catch (error) {
       console.error('Accept offer error:', error);
       Alert.alert('Error', 'Failed to accept offer');
+    } finally {
+      setProcessingOfferId(null);
     }
   };
 
   const handleRejectOffer = async (offer) => {
+    if (processingOfferId) return;
+    setProcessingOfferId(offer.id);
     try {
       await rejectOfferMutation.mutateAsync(offer.id);
       Alert.alert('Success', 'Offer rejected');
     } catch (error) {
       console.error('Reject offer error:', error);
       Alert.alert('Error', 'Failed to reject offer');
+    } finally {
+      setProcessingOfferId(null);
     }
   };
 
@@ -697,6 +705,9 @@ const getStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     color: ASU.white,
   },
+  disabledButton: {
+    opacity: 0.6,
+  },
   chatButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -713,3 +724,4 @@ const getStyles = (theme) => StyleSheet.create({
     color: ASU.white,
   },
 });
+
