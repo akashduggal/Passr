@@ -248,7 +248,7 @@ export default function MyOffersScreen() {
         </View>
 
         {/* Action Buttons (if accepted) */}
-        {offer.status === 'accepted' && (
+        {offer.status === 'accepted' || offer.status === 'sold' && (
           <TouchableOpacity
             style={styles.chatButton}
             onPress={() => {

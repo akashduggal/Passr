@@ -210,8 +210,18 @@ export default function MyListingsScreen() {
                       )}
                     </>
                   ) : (
-                    <View style={[styles.noOffersBadge, { backgroundColor: '#e0e0e0', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }]}>
-                        <Text style={[styles.noOffersText, { color: '#555', fontWeight: 'bold' }]}>Sold</Text>
+                    <View style={{ gap: 8 }}>
+                      <View style={[styles.noOffersBadge, { backgroundColor: '#e0e0e0', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }]}>
+                          <Text style={[styles.noOffersText, { color: '#555', fontWeight: 'bold' }]}>Sold</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.offersButton}
+                        onPress={() => handleViewOffers(listing)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="list" size={16} color={ASU.white} />
+                        <Text style={styles.offersButtonText}>Show Offers</Text>
+                      </TouchableOpacity>
                     </View>
                   )}
                 </View>

@@ -930,7 +930,7 @@ export default function ChatScreen() {
         </ScrollView>
 
         {/* Input Area */}
-        <View style={[styles.inputContainer, { paddingBottom: insets.bottom }]}>
+        <View style={[styles.inputContainer, { paddingBottom: Platform.OS === 'ios' ? insets.bottom : insets.bottom + 20  }]}>
           <TextInput
             style={[styles.input, !chatEnabled && styles.inputDisabled]}
             placeholder={chatEnabled ? 'Type a message...' : 'Chat disabled until offer is accepted'}
