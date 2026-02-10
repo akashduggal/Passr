@@ -166,18 +166,20 @@ export default function LoginScreen() {
             By signing in, you agree to our Terms of Service and Privacy Policy.
           </Text>
 
-          {/* API URL Configuration */}
-          <TouchableOpacity 
-            style={{ marginTop: 20, padding: 10 }}
-            onPress={() => {
-              setTempUrl(UserService.baseUrl);
-              setSettingsVisible(true);
-            }}
-          >
-            <Text style={{ color: theme.textSecondary, fontSize: 12, textAlign: 'center', textDecorationLine: 'underline' }}>
-              Change Backend URL
-            </Text>
-          </TouchableOpacity>
+          {/* API URL Configuration - Only show in Dev/Preview, hide in Production */}
+          {(__DEV__ || process.env.EXPO_PUBLIC_APP_VARIANT !== 'production') && (
+            <TouchableOpacity 
+              style={{ marginTop: 20, padding: 10 }}
+              onPress={() => {
+                setTempUrl(UserService.baseUrl);
+                setSettingsVisible(true);
+              }}
+            >
+              <Text style={{ color: theme.textSecondary, fontSize: 12, textAlign: 'center', textDecorationLine: 'underline' }}>
+                Change Backend URL
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <Modal
             animationType="slide"
@@ -299,79 +301,78 @@ const getStyles = (theme, isDarkMode) => StyleSheet.create({
     overflow: 'hidden',
   },
   headerContent: {
-    zIndex: 2,
-  },
-  appName: {
-    fontSize: 42,
-    fontWeight: '800',
-    color: ASU.white,
-    marginBottom: 8,
-    letterSpacing: -1,
-  },
-  tagline: {
-    fontSize: 24,
-    fontWeight: '500',
-    color: ASU.white,
-    lineHeight: 32,
-    opacity: 0.9,
+    alignItems: 'center',
+    zIndex: 1,
   },
   circleDecoration: {
     position: 'absolute',
-    top: -100,
-    right: -100,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    top: -50,
+    left: -50,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  appName: {
+    fontSize: 42,
+    fontWeight: 'bold',
+    color: '#FFC627',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  tagline: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    lineHeight: 24,
   },
   content: {
     flex: 0.45,
+    paddingTop: 32,
     paddingHorizontal: 32,
-    paddingTop: 40,
     justifyContent: 'space-between',
-    paddingBottom: Platform.OS === 'ios' ? 48 : 32,
+    paddingBottom: 40,
   },
   featuresList: {
-    gap: 20,
+    gap: 16,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
   featureText: {
-    fontSize: 18,
+    fontSize: 16,
     color: theme.text,
     fontWeight: '500',
   },
   footer: {
     gap: 16,
+    alignItems: 'center',
   },
   googleButton: {
+    backgroundColor: theme.surface,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 16,
-    paddingVertical: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
     width: '100%',
     gap: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowRadius: 4,
   },
   googleButtonDisabled: {
     opacity: 0.7,
   },
   googleButtonText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
     color: theme.text,
   },
@@ -380,7 +381,6 @@ const getStyles = (theme, isDarkMode) => StyleSheet.create({
     color: theme.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
-    opacity: 0.7,
   },
   centeredView: {
     flex: 1,
@@ -389,7 +389,7 @@ const getStyles = (theme, isDarkMode) => StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalView: {
-    margin: 20,
+    width: '80%',
     borderRadius: 20,
     padding: 25,
     alignItems: 'center',
@@ -401,34 +401,29 @@ const getStyles = (theme, isDarkMode) => StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    width: '80%',
   },
   modalTitle: {
-    marginBottom: 15,
-    textAlign: 'center',
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 15,
   },
   input: {
-    height: 40,
     width: '100%',
-    margin: 12,
+    height: 40,
     borderWidth: 1,
-    padding: 10,
     borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 20,
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 15,
     gap: 10,
+    width: '100%',
+    justifyContent: 'flex-end',
   },
   modalButton: {
-    flex: 1,
-    borderRadius: 10,
-    padding: 10,
-    elevation: 2,
-    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
   },
 });

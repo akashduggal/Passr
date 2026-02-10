@@ -6,15 +6,22 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_VARIANT": "development"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "environment": "preview"
+      "env": {
+        "EXPO_PUBLIC_APP_VARIANT": "preview"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "environment": "production"
+      "env": {
+        "EXPO_PUBLIC_APP_VARIANT": "production"
+      }
     },
     "development-simulator": {
       "developmentClient": true,
@@ -22,7 +29,9 @@
       "ios": {
         "simulator": true
       },
-      "environment": "development"
+      "env": {
+        "EXPO_PUBLIC_APP_VARIANT": "development"
+      }
     }
   },
   "submit": {
