@@ -4,6 +4,7 @@ import { Stack, useRouter, useRootNavigationState, usePathname } from 'expo-rout
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { FilterProvider } from '../src/context/FilterContext';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { WishlistProvider } from '../src/context/WishlistContext';
@@ -157,138 +158,146 @@ export default function Layout() {
         <FilterProvider>
           <WishlistProvider>
             <ToastProvider>
-              <View style={{ flex: 1 }}>
-            <Stack
-            screenOptions={{
-              headerBackTitleVisible: false,
-            }}
-          >
-            <Stack.Screen name="index" options={{ title: '', headerShown: false }} />
-            <Stack.Screen
-              name="login"
-              options={{
-                title: '',
-                headerTransparent: true,
-              }}
-            />
-            <Stack.Screen
-              name="dashboard"
-              options={{
-                headerShown: false,
-                headerTransparent: true,
-              }}
-            />
-            <Stack.Screen
-              name="user-profile"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="profile-my-listings"
-              options={{
-                title: 'My Listings',
-                headerBackTitleVisible: false,
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="profile-past-orders"
-              options={{
-                title: 'Offers',
-                headerBackTitleVisible: false,
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="profile-faq"
-              options={{
-                title: 'FAQ',
-                headerBackTitleVisible: false,
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="profile-my-wishlist"
-              options={{
-                title: 'My Wishlist',
-                headerBackTitleVisible: false,
-                headerTransparent: false,
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="profile-notification-settings"
-              options={{
-                title: 'Notifications',
-                headerBackTitleVisible: false,
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="profile-privacy-data"
-              options={{
-                title: 'Privacy & Data',
-                headerBackTitleVisible: false,
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="profile-support"
-              options={{
-                title: 'Support',
-                headerBackTitleVisible: false,
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="notifications"
-              options={{
-                title: 'Notifications',
-                headerBackTitleVisible: false,
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="filters"
-              options={{
-                title: 'Filters',
-                headerBackTitleVisible: false,
-              }}
-            />
-            <Stack.Screen
-              name="product-detail"
-              options={{
-                title: '',
-                headerTransparent: true,
-                headerBackTitleVisible: false,
-                headerBackTitle: '',
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="chat"
-              options={{
-                headerShown: false,
-              }}
-            />
-          </Stack>
-          
-          {isSplashVisible && (
-            <Animated.View 
-              pointerEvents="none"
-              style={[
-                StyleSheet.absoluteFill, 
-                { 
-                  zIndex: 9999, 
-                  opacity: fadeAnim 
-                }
-              ]}
-            >
-              <AppSplashScreen />
-            </Animated.View>
-          )}
-        </View>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <View style={{ flex: 1 }}>
+                  <Stack
+                    screenOptions={{
+                      headerBackTitleVisible: false,
+                    }}
+                  >
+                    <Stack.Screen name="index" options={{ title: '', headerShown: false }} />
+                    <Stack.Screen
+                      name="login"
+                      options={{
+                        title: '',
+                        headerTransparent: true,
+                      }}
+                    />
+                    <Stack.Screen
+                      name="dashboard"
+                      options={{
+                        headerShown: false,
+                        headerTransparent: true,
+                      }}
+                    />
+                    <Stack.Screen
+                      name="user-profile"
+                      options={{
+                        headerShown: false,
+                      }}
+                    />
+                    <Stack.Screen
+                      name="profile-my-listings"
+                      options={{
+                        title: 'My Listings',
+                        headerBackTitleVisible: false,
+                        headerBackButtonDisplayMode: 'minimal',
+                      }}
+                    />
+                    <Stack.Screen
+                      name="profile-past-orders"
+                      options={{
+                        title: 'Offers',
+                        headerBackTitleVisible: false,
+                        headerBackButtonDisplayMode: 'minimal',
+                      }}
+                    />
+                    <Stack.Screen
+                      name="profile-listing-offers"
+                      options={{
+                        title: 'Offers',
+                        headerBackTitleVisible: false,
+                        headerBackButtonDisplayMode: 'minimal',
+                      }}
+                    />
+                    <Stack.Screen
+                      name="profile-faq"
+                      options={{
+                        title: 'FAQ',
+                        headerBackTitleVisible: false,
+                        headerBackButtonDisplayMode: 'minimal',
+                      }}
+                    />
+                    <Stack.Screen
+                      name="profile-my-wishlist"
+                      options={{
+                        title: 'My Wishlist',
+                        headerBackTitleVisible: false,
+                        headerTransparent: false,
+                        headerBackButtonDisplayMode: 'minimal',
+                      }}
+                    />
+                    <Stack.Screen
+                      name="profile-notification-settings"
+                      options={{
+                        title: 'Notifications',
+                        headerBackTitleVisible: false,
+                        headerBackButtonDisplayMode: 'minimal',
+                      }}
+                    />
+                    <Stack.Screen
+                      name="profile-privacy-data"
+                      options={{
+                        title: 'Privacy & Data',
+                        headerBackTitleVisible: false,
+                        headerBackButtonDisplayMode: 'minimal',
+                      }}
+                    />
+                    <Stack.Screen
+                      name="profile-support"
+                      options={{
+                        title: 'Support',
+                        headerBackTitleVisible: false,
+                        headerBackButtonDisplayMode: 'minimal',
+                      }}
+                    />
+                    <Stack.Screen
+                      name="notifications"
+                      options={{
+                        title: 'Notifications',
+                        headerBackTitleVisible: false,
+                        headerBackButtonDisplayMode: 'minimal',
+                      }}
+                    />
+                    <Stack.Screen
+                      name="filters"
+                      options={{
+                        title: 'Filters',
+                        headerBackTitleVisible: false,
+                      }}
+                    />
+                    <Stack.Screen
+                      name="product-detail"
+                      options={{
+                        title: '',
+                        headerTransparent: true,
+                        headerBackTitleVisible: false,
+                        headerBackTitle: '',
+                        headerBackButtonDisplayMode: 'minimal',
+                      }}
+                    />
+                    <Stack.Screen
+                      name="chat"
+                      options={{
+                        headerShown: false,
+                      }}
+                    />
+                  </Stack>
+                  
+                  {/* Custom Splash Screen Overlay */}
+                  {isSplashVisible && (
+                    <Animated.View 
+                      style={[
+                        StyleSheet.absoluteFill, 
+                        { opacity: fadeAnim, zIndex: 9999 }
+                      ]}
+                      pointerEvents={isSplashVisible ? 'auto' : 'none'}
+                    >
+                      <AppSplashScreen onReady={() => setIsAppReady(true)} />
+                    </Animated.View>
+                  )}
+                </View>
+              </GestureHandlerRootView>
             </ToastProvider>
           </WishlistProvider>
         </FilterProvider>
