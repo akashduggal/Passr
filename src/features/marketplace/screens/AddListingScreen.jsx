@@ -439,6 +439,40 @@ export default function AddListingScreen({ isTab = false }) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Photos */}
+        <View style={styles.section}>
+          <View style={styles.labelRow}>
+            <Ionicons name="camera-outline" size={18} color={theme.text} style={styles.labelIcon} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Photos</Text>
+          </View>
+          {Platform.OS !== 'web' && (
+            <View style={styles.photoOptionsRow}>
+              <TouchableOpacity
+                style={[styles.photoOptionButton, { backgroundColor: theme.surface, borderColor: ASU.maroon }]}
+                onPress={takePhoto}
+                activeOpacity={0.7}
+                disabled={isCompressing}
+              >
+                <Ionicons name="camera-outline" size={22} color={ASU.maroon} />
+                <Text style={styles.photoOptionText}>Take Photo</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.photoOptionButton, { backgroundColor: theme.surface, borderColor: ASU.maroon }]}
+                onPress={pickImage}
+                activeOpacity={0.7}
+                disabled={isCompressing}
+              >
+                <Ionicons name="images-outline" size={22} color={ASU.maroon} />
+                <Text style={styles.photoOptionText}>Library</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          <View style={styles.imageGrid}>
+            {Array.from({ length: MAX_IMAGES }).map((_, index) => renderImageTile(index))}
+          </View>
+        </View>
+
         {/* Category & Brand Row */}
         <View style={styles.section}>
           <View style={styles.categoryBrandRow}>
@@ -569,39 +603,7 @@ export default function AddListingScreen({ isTab = false }) {
           </Pressable>
         </Modal>
 
-        {/* Photos */}
-        <View style={styles.section}>
-          <View style={styles.labelRow}>
-            <Ionicons name="camera-outline" size={18} color={theme.text} style={styles.labelIcon} />
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Photos</Text>
-          </View>
-          {Platform.OS !== 'web' && (
-            <View style={styles.photoOptionsRow}>
-              <TouchableOpacity
-                style={[styles.photoOptionButton, { backgroundColor: theme.surface, borderColor: ASU.maroon }]}
-                onPress={takePhoto}
-                activeOpacity={0.7}
-                disabled={isCompressing}
-              >
-                <Ionicons name="camera-outline" size={22} color={ASU.maroon} />
-                <Text style={styles.photoOptionText}>Take Photo</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.photoOptionButton, { backgroundColor: theme.surface, borderColor: ASU.maroon }]}
-                onPress={pickImage}
-                activeOpacity={0.7}
-                disabled={isCompressing}
-              >
-                <Ionicons name="images-outline" size={22} color={ASU.maroon} />
-                <Text style={styles.photoOptionText}>Library</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          <View style={styles.imageGrid}>
-            {Array.from({ length: 6 }).map((_, index) => renderImageTile(index))}
-          </View>
-        </View>
+
 
         {/* Title */}
         <View style={styles.section}>

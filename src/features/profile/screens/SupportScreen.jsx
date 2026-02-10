@@ -11,98 +11,20 @@ import {
   Modal,
   Pressable,
   KeyboardAvoidingView,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { getTheme, ASU } from '../../../theme';
+import { useMyTickets, useCreateTicket } from '../../../hooks/queries/useSupportQueries';
 
 const ISSUE_TYPES = ['Listing issue', 'Offers / payments', 'Account & profile', 'Other'];
 
-const MOCK_RAISED_ISSUES = [
-  {
-    id: '1',
-    subject: 'Offer not updating after acceptance',
-    topic: 'Offers / payments',
-    status: 'Open',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    description: 'I accepted an offer on my desk but the chat still says offer pending.',
-  },
-  {
-    id: '2',
-    subject: 'Can\'t upload more than 4 photos',
-    topic: 'Listing issue',
-    status: 'In progress',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    description: 'Add listing form only allows 4 images. FAQ says 6.',
-  },
-  {
-    id: '3',
-    subject: 'Password reset email not received',
-    topic: 'Account & profile',
-    status: 'Resolved',
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    description: 'Requested password reset twice. No email in inbox or spam.',
-  },
-  {
-    id: '4',
-    subject: 'Filter by campus not saving selection',
-    topic: 'Listing issue',
-    status: 'Open',
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    description: 'When I apply filters and select a campus, the selection resets after closing the filters screen. Happens every time.',
-  },
-  {
-    id: '5',
-    subject: 'Seller not receiving push when buyer sends offer',
-    topic: 'Offers / payments',
-    status: 'In progress',
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    description: 'I sent an offer on a dresser. Seller says they never got a notification. Notification settings are enabled.',
-  },
-  {
-    id: '6',
-    subject: 'Profile photo not updating',
-    topic: 'Account & profile',
-    status: 'Resolved',
-    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    description: 'Changed my profile picture but it still shows the old one on product detail and in chat. Restarted app, no change.',
-  },
-  {
-    id: '7',
-    subject: 'Schedule pickup date picker shows past dates',
-    topic: 'Other',
-    status: 'Open',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    description: 'In chat, when scheduling pickup, I can still scroll to past dates in the date selector. Expected them to be hidden.',
-  },
-  {
-    id: '8',
-    subject: 'Wishlist count wrong on profile',
-    topic: 'Account & profile',
-    status: 'In progress',
-    createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-    description: 'My wishlist shows 12 items but I only added 5. After removing one, count went to 15. Seems to increment incorrectly.',
-  },
-  {
-    id: '9',
-    subject: 'Images in listing appear cropped',
-    topic: 'Listing issue',
-    status: 'Open',
-    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-    description: 'Uploaded 6 photos for a couch. On the listing detail page, edges are cropped. Same images look fine in my gallery.',
-  },
-  {
-    id: '10',
-    subject: 'Refund request for duplicate charge',
-    topic: 'Offers / payments',
-    status: 'Resolved',
-    createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
-    description: 'I was charged twice for the same offer. Transaction IDs: #8821 and #8822. Please refund the duplicate.',
-  },
-];
-
-function formatIssueDate(date) {
+function formatIssueDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
   const now = new Date();
   const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
   if (diffDays === 0) return 'Today';
@@ -114,10 +36,15 @@ function formatIssueDate(date) {
 export default function SupportScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = Platform.OS === 'ios' ? 44 : 56;
-  // const topPadding = insets.top + headerHeight + 8;
   const topPadding = insets.top + 8;
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
+  const styles = getStyles(theme, insets);
+
+  // Queries
+  const { data: tickets = [], isLoading, refetch, isRefetching } = useMyTickets();
+  const createTicketMutation = useCreateTicket();
+
   const [selectedIssueType, setSelectedIssueType] = useState('Listing issue');
   const [newIssueModalVisible, setNewIssueModalVisible] = useState(false);
   
@@ -125,15 +52,12 @@ export default function SupportScreen() {
   const [subject, setSubject] = useState('');
   const [details, setDetails] = useState('');
   
-  // Use MOCK_RAISED_ISSUES as initial state for issues to render
-  const [filteredIssues, setFilteredIssues] = useState(MOCK_RAISED_ISSUES);
-
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('All'); // All, Open, Resolved
 
   // Filter issues based on search and tab
   const getVisibleIssues = () => {
-    return filteredIssues.filter(issue => {
+    return tickets.filter(issue => {
       const matchesSearch = 
         issue.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
         issue.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -149,8 +73,6 @@ export default function SupportScreen() {
 
   const visibleIssues = getVisibleIssues();
   
-  const styles = getStyles(theme, insets);
-
   const openNewIssueModal = () => setNewIssueModalVisible(true);
   const closeNewIssueModal = () => {
     setNewIssueModalVisible(false);
@@ -166,18 +88,20 @@ export default function SupportScreen() {
       return;
     }
 
-    const newIssue = {
-      id: Date.now().toString(),
+    createTicketMutation.mutate({
       subject: subject.trim(),
       topic: selectedIssueType,
-      status: 'Open',
-      createdAt: new Date(),
       description: details.trim(),
-    };
-
-    setFilteredIssues([newIssue, ...filteredIssues]);
-    closeNewIssueModal();
-    Alert.alert('Ticket Created', 'We have received your issue and will look into it shortly.');
+    }, {
+      onSuccess: () => {
+        closeNewIssueModal();
+        Alert.alert('Ticket Created', 'We have received your issue and will look into it shortly.');
+      },
+      onError: (error) => {
+        Alert.alert('Error', 'Failed to create ticket. Please try again.');
+        console.error(error);
+      }
+    });
   };
 
   return (
@@ -190,6 +114,9 @@ export default function SupportScreen() {
           style={styles.scrollView}
           contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight + 16 }]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={ASU.maroon} />
+          }
         >
           {/* Header Section */}
           <View style={styles.header}>
@@ -235,14 +162,18 @@ export default function SupportScreen() {
           </View>
 
         <View style={styles.section}>
-          {visibleIssues.length === 0 ? (
+          {isLoading ? (
+             <View style={styles.loadingState}>
+               <ActivityIndicator size="large" color={ASU.maroon} />
+             </View>
+          ) : visibleIssues.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={[styles.emptyStateIconWrap, { backgroundColor: theme.surface }]}>
                 <Ionicons name="search" size={48} color={theme.textSecondary} />
               </View>
               <Text style={[styles.emptyStateTitle, { color: theme.text }]}>No tickets found</Text>
               <Text style={[styles.emptyStateBody, { color: theme.textSecondary }]}>
-                Try adjusting your search or create a new ticket.
+                {searchQuery ? 'Try adjusting your search.' : 'Create a new ticket to get started.'}
               </Text>
             </View>
           ) : (
@@ -291,104 +222,111 @@ export default function SupportScreen() {
             ))
           )}
         </View>
-      </ScrollView>
-      <View style={[styles.fabContainer, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity
-          style={[styles.fab, { backgroundColor: ASU.maroon }]}
-          onPress={openNewIssueModal}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="add" size={28} color={ASU.white} />
-        </TouchableOpacity>
-      </View>
-
-      <Modal
-        visible={newIssueModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={closeNewIssueModal}
-        statusBarTranslucent={true}
-      >
-        <Pressable style={styles.modalOverlay} onPress={closeNewIssueModal}>
-          <KeyboardAvoidingView
-            style={styles.modalKeyboardView}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        </ScrollView>
+        <View style={[styles.fabContainer, { paddingBottom: insets.bottom + 16 }]}>
+          <TouchableOpacity
+            style={[styles.fab, { backgroundColor: ASU.maroon }]}
+            onPress={openNewIssueModal}
+            activeOpacity={0.8}
           >
-            <Pressable style={[styles.newIssueSheet, { backgroundColor: theme.surface }]} onPress={(e) => e.stopPropagation()}>
-              <View style={styles.newIssueModalHeader}>
-                <Text style={[styles.newIssueModalTitle, { color: theme.text }]}>New issue</Text>
-                <TouchableOpacity onPress={closeNewIssueModal} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                  <Ionicons name="close" size={24} color={theme.text} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView
-                style={styles.newIssueModalScroll}
-                contentContainerStyle={styles.newIssueModalScrollContent}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-              >
-                <Text style={styles.fieldLabel}>Topic</Text>
+            <Ionicons name="add" size={28} color={ASU.white} />
+          </TouchableOpacity>
+        </View>
+
+        <Modal
+          visible={newIssueModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={closeNewIssueModal}
+          statusBarTranslucent={true}
+        >
+          <Pressable style={styles.modalOverlay} onPress={closeNewIssueModal}>
+            <KeyboardAvoidingView
+              style={styles.modalKeyboardView}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+              <Pressable style={[styles.newIssueSheet, { backgroundColor: theme.surface }]} onPress={(e) => e.stopPropagation()}>
+                <View style={styles.newIssueModalHeader}>
+                  <Text style={[styles.newIssueModalTitle, { color: theme.text }]}>New issue</Text>
+                  <TouchableOpacity onPress={closeNewIssueModal} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                    <Ionicons name="close" size={24} color={theme.text} />
+                  </TouchableOpacity>
+                </View>
                 <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.issueChipsContainer}
+                  style={styles.newIssueModalScroll}
+                  contentContainerStyle={styles.newIssueModalScrollContent}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
                 >
-                  {ISSUE_TYPES.map((type) => {
-                    const isSelected = selectedIssueType === type;
-                    return (
-                      <TouchableOpacity
-                        key={type}
-                        style={[styles.issueChip, isSelected && styles.issueChipSelected]}
-                        onPress={() => setSelectedIssueType(type)}
-                        activeOpacity={0.7}
-                      >
-                        <Text
-                          style={[
-                            styles.issueChipText,
-                            isSelected && styles.issueChipTextSelected,
-                          ]}
+                  <Text style={styles.fieldLabel}>Topic</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.issueChipsContainer}
+                  >
+                    {ISSUE_TYPES.map((type) => {
+                      const isSelected = selectedIssueType === type;
+                      return (
+                        <TouchableOpacity
+                          key={type}
+                          style={[styles.issueChip, isSelected && styles.issueChipSelected]}
+                          onPress={() => setSelectedIssueType(type)}
+                          activeOpacity={0.7}
                         >
-                          {type}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                          <Text
+                            style={[
+                              styles.issueChipText,
+                              isSelected && styles.issueChipTextSelected,
+                            ]}
+                          >
+                            {type}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+
+                  <Text style={styles.fieldLabel}>Subject</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Short summary (e.g. Offer not updating)"
+                    placeholderTextColor={theme.placeholder}
+                    value={subject}
+                    onChangeText={setSubject}
+                  />
+
+                  <Text style={styles.fieldLabel}>Description</Text>
+                  <TextInput
+                    style={[styles.input, styles.textarea]}
+                    placeholder="Describe what happened, which listing or offer this is about, and any details that can help."
+                    placeholderTextColor={theme.placeholder}
+                    value={details}
+                    onChangeText={setDetails}
+                    multiline
+                    numberOfLines={5}
+                    textAlignVertical="top"
+                  />
+
+                  <TouchableOpacity
+                    style={[styles.submitButton, createTicketMutation.isPending && { opacity: 0.7 }]}
+                    onPress={handleSubmit}
+                    activeOpacity={0.8}
+                    disabled={createTicketMutation.isPending}
+                  >
+                    {createTicketMutation.isPending ? (
+                      <ActivityIndicator size="small" color={ASU.white} />
+                    ) : (
+                      <Ionicons name="paper-plane-outline" size={18} color={ASU.white} />
+                    )}
+                    <Text style={styles.submitButtonText}>
+                      {createTicketMutation.isPending ? 'Submitting...' : 'Submit'}
+                    </Text>
+                  </TouchableOpacity>
                 </ScrollView>
-
-                <Text style={styles.fieldLabel}>Subject</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Short summary (e.g. Offer not updating)"
-                  placeholderTextColor={theme.placeholder}
-                  value={subject}
-                  onChangeText={setSubject}
-                />
-
-                <Text style={styles.fieldLabel}>Description</Text>
-                <TextInput
-                  style={[styles.input, styles.textarea]}
-                  placeholder="Describe what happened, which listing or offer this is about, and any details that can help."
-                  placeholderTextColor={theme.placeholder}
-                  value={details}
-                  onChangeText={setDetails}
-                  multiline
-                  numberOfLines={5}
-                  textAlignVertical="top"
-                />
-
-                <TouchableOpacity
-                  style={styles.submitButton}
-                  onPress={handleSubmit}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="paper-plane-outline" size={18} color={ASU.white} />
-                  <Text style={styles.submitButtonText}>Submit</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </Pressable>
-          </KeyboardAvoidingView>
-        </Pressable>
-      </Modal>
+              </Pressable>
+            </KeyboardAvoidingView>
+          </Pressable>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -399,6 +337,10 @@ const getStyles = (theme, insets) =>
     container: {
       flex: 1,
       backgroundColor: theme.background,
+    },
+    loadingState: {
+      padding: 40,
+      alignItems: 'center',
     },
     fabContainer: {
       position: 'absolute',

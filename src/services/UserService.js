@@ -180,8 +180,15 @@ class UserService {
    */
   async handleResponse(response) {
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const text = await response.text();
+      let errorData = {};
+      try {
+        errorData = JSON.parse(text);
+      } catch (e) {
+        // Not JSON, likely an HTML error page from proxy/server
+        console.warn('UserService: Received non-JSON error response:', text.substring(0, 200));
+      }
+      throw new Error(errorData.message || `HTTP error! status: ${response.status} - ${text.substring(0, 100)}`);
     }
     return response.json();
   }
