@@ -144,6 +144,9 @@ export default function LoginScreen() {
             <Text style={styles.featureText}>Safe Buying & Selling</Text>
           </View>
         </View>
+        <Text style={{ fontSize: 10, color: 'gray', textAlign: 'center', marginTop: 4 }}>
+            API: {process.env.EXPO_PUBLIC_API_URL}
+      </Text>
 
         <View style={styles.footer}>
           <TouchableOpacity
@@ -161,10 +164,6 @@ export default function LoginScreen() {
               {isLoading ? 'Signing in...' : 'Sign with Google (@asu.edu)'}
             </Text>
           </TouchableOpacity>
-          
-          <Text style={styles.termsText}>
-            By signing in, you agree to our Terms of Service and Privacy Policy.
-          </Text>
 
           {/* API URL Configuration - Only show in Dev/Preview, hide in Production */}
           {(__DEV__ || process.env.EXPO_PUBLIC_APP_VARIANT !== 'production') && (

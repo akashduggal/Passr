@@ -2,6 +2,8 @@
 
 **A marketplace app for students to buy and sell items within their campus community**
 
+🌐 **Official Website:** [pass-web.vercel.app](https://pass-web.vercel.app/)
+
 Passr is a mobile marketplace application designed specifically for students to easily buy and sell items like furniture, electronics, kitchen appliances, and event tickets within their campus community. Built with React Native and Expo, the app provides a seamless, secure, and user-friendly platform for peer-to-peer transactions.
 
 **→ [How to set up the project locally and run it with Expo Go](SETUP.md)**

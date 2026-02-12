@@ -2,16 +2,11 @@
   "expo": {
     "name": "Passr",
     "slug": "react_native",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    // "splash": {
-    //   "image": "./assets/splash-icon.png",
-    //   "resizeMode": "contain",
-    //   "backgroundColor": "#8C1D40"
-    // },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.passr.app",
@@ -50,9 +45,9 @@
             "useFrameworks": "static"
           },
           "android": {
-            "enableMinifyInReleaseBuilds": false,
-            "enableShrinkResourcesInReleaseBuilds": false,
-            "enableProguardInReleaseBuilds": false,
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableProguardInReleaseBuilds": true,
             "usesCleartextTraffic": true
           }
         }

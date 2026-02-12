@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "872459232362-ct47mijd4nglcs81e43kk7iqhskvcetd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.passr.app",
+            "certificate_hash": "04c232f7104c2002af81b6e3b255e75a8109f7fd"
+          }
+        },
+        {
           "client_id": "872459232362-ivrsvlkk7bmg29sna98ah5do25ev2hq5.apps.googleusercontent.com",
           "client_type": 3
         }

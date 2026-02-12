@@ -247,8 +247,8 @@ export default function MyOffersScreen() {
           </View>
         </View>
 
-        {/* Action Buttons (if accepted) */}
-        {offer.status === 'accepted' || offer.status === 'sold' && (
+        {/* Action Buttons (if accepted or pending) */}
+        {(offer.status === 'accepted' || offer.status === 'sold' || offer.status === 'pending') && (
           <TouchableOpacity
             style={styles.chatButton}
             onPress={() => {
@@ -261,7 +261,7 @@ export default function MyOffersScreen() {
                   listingId: mainItem.id.toString(),
                   sellerId: offer.sellerId || '',
                   offerId: offer.id,
-                  offerAccepted: 'true',
+                  offerAccepted: (offer.status === 'accepted' || offer.status === 'sold').toString(),
                   sellerName: offer.sellerName || 'Seller',
                 },
               });
@@ -384,7 +384,7 @@ export default function MyOffersScreen() {
                     <Text style={styles.modalTotalValue}>${selectedBundle.offerAmount}</Text>
                   </View>
                   
-                  {selectedBundle.status === 'accepted' && (
+                  {(selectedBundle.status === 'accepted' || selectedBundle.status === 'pending') && (
                     <TouchableOpacity
                       style={styles.chatButton}
                       onPress={() => {
@@ -399,7 +399,7 @@ export default function MyOffersScreen() {
                             sellerId: selectedBundle.sellerId || '',
                             sellerName: selectedBundle.sellerName || 'Seller',
                             offerId: selectedBundle.id,
-                            offerAccepted: 'true',
+                            offerAccepted: (selectedBundle.status === 'accepted').toString(),
                           },
                         });
                       }}
